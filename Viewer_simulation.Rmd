@@ -1,0 +1,288 @@
+---
+title: "Report of DAG, Geminos"
+output: html_document
+date: "Feb 3, 2026"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+We summarize below the materials delivered to date for the viewing
+behavior simulation project. These items are intended to document our
+current modeling assumptions, causal structure, and progress toward a
+complete simulated dataset.
+
+```{r include=FALSE, warning=FALSE}
+library(dagitty)
+library(ggdag)
+library(ggplot2)
+```
+
+## 1. List of variables and their meaning
+
+The variables in the current data-generating process are grouped into
+exogenous variables, predetermined variables, and endogenous outcomes.
+
+```{r include=FALSE, warning=FALSE}
+dag_model <- dagitty("
+dag {
+  age
+  genre_preference
+  major_release
+  rec_syst
+  past_minutes_viewed
+  subscription
+  device_type
+  minutes_viewed
+  
+  device_type -> minutes_viewed
+  age -> minutes_viewed
+  age -> device_type
+  age -> subscription
+  
+  genre_preference -> minutes_viewed
+  genre_preference -> subscription
+  
+  rec_syst -> minutes_viewed
+  
+  past_minutes_viewed -> minutes_viewed
+  
+  subscription -> minutes_viewed
+  major_release -> minutes_viewed
+}
+")
+
+```
+
+### Exogenous variables (not caused by other variables in the model):
+
+-   **Age**: Continuous variable representing the user’s age.
+
+-   **Genre preference**: Categorical variable indicating the user’s
+    preferred content genre (Action, Drama, Comedy, SciFi, Romance).
+
+-   **Major release**: Categorical variable capturing large external
+    content shocks (e.g., sports events, celebrity news, politics,
+    technology, general news).
+
+### Predetermined / sequential variables:
+
+-   **Past minutes viewed**: Continuous variable representing historical
+    viewing behavior prior to the current period.
+
+-   **Recommendation system exposure (rec_syst)**: Binary indicator for
+    whether the user is exposed to a recommendation system, modeled as a
+    function of past viewing behavior.
+
+### Endogenous variables:
+
+-   **Subscription**: Binary variable indicating whether the user holds
+    a subscription, influenced by age and genre preference.
+
+-   **Device type**: Categorical variable indicating the primary viewing
+    device (TV, Mobile, Tablet, PC), influenced by age.
+
+-   **Minutes viewed**: Continuous outcome variable measuring total
+    viewing time in the current period.
+-   **alive_i** : A binary indicator of whether the user is still active on the platform.
+
+### Variable for further analysis
+
+-   time_point_0 
+The time point that users report past_minutes_viewed
+
+-   time_point_1
+The time point that users report minutes_viewed
+
+
+
+```{r include=FALSE, warning=FALSE,echo=FALSE}
+set.seed(1000)
+n <- 1000
+
+data <- data.frame(id = 1:n)
+
+# -------------------------
+# Exogenous variables
+# -------------------------
+
+# Age
+data$age <- round(rnorm(n, mean = 20, sd = 4), 1)
+
+# Genre preference
+data$genre_preference <- sample(
+  c("Action", "Drama", "Comedy", "SciFi", "Romance"),
+  n, replace = TRUE,
+  prob = c(0.25, 0.20, 0.30, 0.15, 0.10)
+)
+
+# Major release (exogenous content shock)
+data$major_release <- sample(
+  c("sports", "politics", "celebrity", "tech", "news"),
+  n, replace = TRUE,
+  prob = c(0.30, 0.20, 0.30, 0.10, 0.10)
+)
+
+# -------------------------
+# Past behavior (pre-treatment)
+# -------------------------
+
+data$past_minutes_viewed <- rnorm(
+  n,
+  mean = 30 + 0.3 * data$age,
+  sd = 8
+)
+
+# -------------------------
+# Recommendation system
+# past behavior → rec system
+# -------------------------
+
+data$rec_syst <- rbinom(
+  n, 1,
+  plogis(-1 + 0.04 * data$past_minutes_viewed)
+)
+
+# -------------------------
+# Subscription
+# age + genre preference → subscription
+# -------------------------
+
+data$subscription <- rbinom(
+  n, 1,
+  plogis(
+    -2 +
+      0.04 * data$age +
+      ifelse(data$genre_preference == "Drama",   0.5, 0) +
+      ifelse(data$genre_preference == "SciFi",   0.4, 0) +
+      ifelse(data$genre_preference == "Comedy",  0.3, 0) +
+      ifelse(data$genre_preference == "Romance", 0.2, 0) +
+      ifelse(data$genre_preference == "Action",  0.1, 0)
+  )
+)
+
+# -------------------------
+# Device type
+# age → device_type
+# -------------------------
+
+data$device_type <- apply(
+  plogis(cbind(
+    0.6 - 0.03 * data$age,  # TV
+    0.2 + 0.04 * data$age,  # Mobile
+    0.1,                   # Tablet
+    0.1                    # PC
+  )),
+  1,
+  function(p) sample(
+    c("TV", "Mobile", "Tablet", "PC"),
+    size = 1,
+    prob = p / sum(p)
+  )
+)
+
+# -------------------------
+# Outcome: minutes viewed
+# -------------------------
+
+data$minutes_viewed <-
+  60 +
+  0.06 * data$age +
+  0.35 * data$past_minutes_viewed +
+  6   * data$rec_syst +
+  15  * data$subscription +
+  ifelse(data$device_type == "TV",     8, 0) +
+  ifelse(data$device_type == "Mobile", -4, 0) +
+  ifelse(data$major_release == "sports",    10, 0) +
+  ifelse(data$major_release == "celebrity",  8, 0) +
+  ifelse(data$major_release == "news",      12, 0) +
+  ifelse(data$genre_preference == "Action",  4, 0) +
+  ifelse(data$genre_preference == "Comedy",  2, 0) +
+  rnorm(n, mean = 0, sd = 10)
+
+```
+
+## 2. Proposed design (sample size and time structure)
+
+-   **Number of subjects**: 1,000 users.
+
+-   **Time structure**:
+
+    -   One pre-period capturing historical viewing behavior (past
+        minutes viewed).
+
+    -   One outcome period measuring minutes viewed.
+
+-   **Treatment / exposure of interest**:
+
+    -   Recommendation system exposure, which is probabilistically
+        assigned based on past viewing behavior.
+
+-   **Purpose of current design**:
+
+    -   To validate the causal structure implied by the DAG.
+
+    -   To demonstrate feasibility of simulating realistic viewing
+        behavior under explicit modeling assumptions.
+
+## 3. Directed Acyclic Graph (DAG)
+
+We specify a causal DAG to encode assumed relationships among user
+characteristics, platform mechanisms, and viewing outcomes.
+
+```{r echo=FALSE}
+p <- ggdag(dag_model, layout = "circle") +
+  theme_dag() +
+  geom_dag_label(colour = "red")+
+  labs(title = "Causal DAG for Viewing Behavior")+
+  theme_minimal()
+p
+```
+
+```{r include=FALSE,echo=FALSE}
+fit_true <- lm(
+  minutes_viewed ~ 
+    age +
+    past_minutes_viewed +
+    rec_syst +
+    subscription +
+    device_type +
+    major_release +
+    genre_preference,
+  data = data
+)
+
+summary(fit_true)
+```
+
+## 4. Conditional Probability Distribution
+
+Each variable in the model is generated according to a conditional
+mechanism that reflects how the platform and users interact in practice.
+
+-   Historical viewing behavior is determined first and serves as a
+    baseline indicator of user engagement.
+
+-   Recommendation exposure depends on prior engagement, reflecting
+    targeting rules commonly used in recommendation systems.
+
+-   Subscription decisions depend on user demographics and content
+    preferences.
+
+-   Device choice varies systematically with age.
+
+-   Viewing time in the current period is then generated as the combined
+    result of user characteristics, platform interventions, content
+    availability, and random variation.
+    
+
+
+## Probability Caculation
+
+P(minutes_viewed,age,past_minutes_viewed,rec_syst,major_release,alive_i,subscription,genre_preference)= 
+
+P(minutes_viewed|age,past_minutes_viewed,rec_syst,major_release,alive_i,genre_preference) 
+
+P(past_minutes_viewed)P(rec_syst)P(major_release)P(alive_i|subscription)
+
+P(subscription|age,genre_preference)P(age)P(genre_preference) 
