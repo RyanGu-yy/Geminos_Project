@@ -277,7 +277,7 @@ mechanism that reflects how the platform and users interact in practice.
     
 
 
-## Probability Caculation
+## 5. Probability Caculation
 
 P(minutes_viewed,age,past_minutes_viewed,rec_syst,major_release,alive_i,subscription,genre_preference)= 
 
@@ -286,3 +286,103 @@ P(minutes_viewed|age,past_minutes_viewed,rec_syst,major_release,alive_i,genre_pr
 P(past_minutes_viewed)P(rec_syst)P(major_release)P(alive_i|subscription)
 
 P(subscription|age,genre_preference)P(age)P(genre_preference) 
+
+## 6. Longitudinal DAG
+
+```{r}
+dag_longitudinal <- dagitty("
+dag {
+
+preference
+Age_1
+Age_2
+Age_3
+min_viewed_1
+min_viewed_2
+min_viewed_3
+rec_syst_2
+
+preference -> min_viewed_1
+preference -> min_viewed_2
+preference -> min_viewed_3
+
+Age_1 -> min_viewed_1
+Age_2 -> min_viewed_2
+Age_3 -> min_viewed_3
+
+min_viewed_1 -> min_viewed_2
+min_viewed_2 -> min_viewed_3
+
+
+rec_syst_2 -> min_viewed_3
+
+}
+")
+
+ggdag(dag_longitudinal, layout = "sugiyama") +
+  theme_dag() +
+  geom_dag_label(colour = "red") +
+  labs(title = "Longitudinal Causal DAG (Board Version)") +
+  theme_minimal()
+```
+
+```{r}
+library(dplyr)
+
+set.seed(2026)
+
+n <- 1000
+
+data <- data.frame(id = 1:n)
+
+data$Age_1 <- round(rnorm(n, 20, 4), 1)
+data$Age_2 <- data$Age_1 + 1
+data$Age_3 <- data$Age_1 + 2
+
+data$preference <- sample(
+  c("Action", "Drama", "Comedy", "SciFi", "Romance"),
+  n,
+  replace = TRUE,
+  prob = c(0.25, 0.20, 0.30, 0.15, 0.10)
+)
+
+data$min_viewed_1 <-
+  60 +
+  0.05 * data$Age_1 +
+  rnorm(n, 0, 10)
+
+data$min_viewed_2 <-
+  60 +
+  0.05 * data$Age_2 +
+  0.3  * data$min_viewed_1 +
+  rnorm(n, 0, 10)
+
+data$rec_syst_2 <- rbinom(
+  n,
+  1,
+  plogis(-2 + 0.03 * data$Age_2)
+)
+
+data$min_viewed_3 <-
+  60 +
+  0.05 * data$Age_3 +
+  0.3  * data$min_viewed_2 +
+  5    * data$rec_syst_2 +
+  rnorm(n, 0, 10)
+
+final_data <- data %>%
+  select(
+    id,
+    preference,
+    Age_1, Age_2, Age_3,
+    min_viewed_1,
+    min_viewed_2,
+    min_viewed_3,
+    rec_syst_2
+  )
+
+write.csv(final_data,
+          "simulated_longitudinal_final.csv",
+          row.names = FALSE)
+```
+
