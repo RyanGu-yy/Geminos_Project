@@ -1,0 +1,148 @@
+---
+title: "DAG and Simulation"
+author: "Jizhou Zhang"
+date: "2026-02-12"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## DAG
+```{r}
+library(dagitty)
+library(ggplot2)
+library(ggdag)
+
+dag_wb <- dagitty("
+dag {
+  Preference
+  Min_viewed_t1
+  Min_t2
+  Min_t3
+  Age_t1
+  Age_t2
+  Age_t3
+  Rec_t2
+
+  Preference -> Min_viewed_t1
+  Preference -> Min_t2
+  Preference -> Min_t3
+
+  Min_viewed_t1 -> Min_t2
+  Min_t2 -> Min_t3
+
+  Age_t1 -> Min_viewed_t1
+  Age_t2 -> Min_t2
+  Age_t3 -> Min_t3
+
+  Rec_t2 -> Min_t3
+}
+")
+
+coordinates(dag_wb) <- list(
+  x = c(
+    Preference     = 0,
+    Min_viewed_t1  = -3.2,
+    Min_t2         = 0,
+    Min_t3         = 3.2,
+    Age_t1         = -3.2,
+    Age_t2         = 0,
+    Age_t3         = 3.2,
+    Rec_t2         = 0
+  ),
+  y = c(
+    Preference     = 2.5,
+    Min_viewed_t1  = 1,
+    Min_t2         = 1,
+    Min_t3         = 1,
+    Age_t1         = -1.3,
+    Age_t2         = 0.1, 
+    Age_t3         = -1.3,
+    Rec_t2         = -1.3
+  )
+)
+
+label_map <- c(
+  Preference    = "Prefer\nence",
+  Min_viewed_t1 = "Min\n(t1)",
+  Min_t2        = "Min\n(t2)",
+  Min_t3        = "Min\n(t3)",
+  Rec_t2        = "Rec\n(t2)",
+  Age_t1        = "Age\n(t1)",
+  Age_t2        = "Age\n(t2)",
+  Age_t3        = "Age\n(t3)"
+)
+
+p <- ggdag(dag_wb, text = FALSE) +
+  geom_dag_edges(edge_width = 1.1) +
+  geom_dag_point(size = 18) +
+  geom_dag_text(aes(label = label_map[name]),
+                color = "white",
+                size = 4.2,
+                fontface = "bold",
+                lineheight = 0.9) +
+  theme_void() +
+  labs(title = "DAG by timepoints") +
+  theme(plot.title = element_text(hjust = 0.5, size = 16))
+
+print(p)
+```
+
+
+## Factorization of the joint distribution
+\[
+\begin{aligned}
+P(O)
+&=P(\text{Preference})\,
+  P(\text{Age}_{t1})\,
+  P(\text{Min\_viewed}_{t1}\mid \text{Preference},\text{Age}_{t1})\,
+  P(\text{Age}_{t2})\,
+  P(\text{Min}_{t2}\mid \text{Preference},\text{Age}_{t2},\text{Min\_viewed}_{t1})\\
+&\quad\times
+  P(\text{Rec}_{t2})\,
+  P(\text{Age}_{t3})\,
+  P(\text{Min}_{t3}\mid \text{Preference},\text{Age}_{t3},\text{Min}_{t2},\text{Rec}_{t2}) .
+\end{aligned}
+\]
+
+
+## Simulation
+```{r}
+set.seed(1)
+n <- 5000
+
+Preference <- rnorm(n, 0, 1)
+
+Age_t1 <- rnorm(n, 30, 8)
+Age_t2 <- Age_t1 + 1
+Age_t3 <- Age_t2 + 1
+
+Min_viewed_t1 <- 20 + 4.5*Preference + 0.25*Age_t1 + rnorm(n, 0, 5)
+
+Min_t2 <- 10 + 4.5*Preference + 0.20*Age_t2 + 0.50*Min_viewed_t1 + rnorm(n, 0, 5)
+
+Rec_t2 <- rbinom(n, 1, 0.5)
+
+Min_t3 <- 8 + 4.5*Preference + 0.18*Age_t3 + 0.45*Min_t2 + 6*Rec_t2 + rnorm(n, 0, 5)
+
+data_3t_new <- data.frame(
+  Preference,
+  Age_t1, Min_viewed_t1,
+  Age_t2, Min_t2,
+  Rec_t2,
+  Age_t3, Min_t3
+)
+
+head(data_3t_new)
+summary(data_3t_new)
+
+write.csv(data_3t_new,
+          file = "three_timepoint_simulation.csv",
+          row.names = FALSE)
+```
+
+
+
+
+
