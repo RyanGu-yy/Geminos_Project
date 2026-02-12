@@ -1,0 +1,282 @@
+---
+title: "Synthetic Data Generation for DiD (3 Time Points)"
+author: "Geminos Team"
+date: "`r Sys.Date()`"
+output:
+  pdf_document:
+    toc: true
+    number_sections: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+set.seed(123)
+```
+
+# 1. Study design (what / who / when / treatment / outcome)
+
+**Population.** Netflix subscribers (broad age distribution; multiple devices and subscription plans).
+
+**Time period.** Three weekly time points:  
+- **t0**: baseline (earliest pre period)  
+- **t1**: pre-treatment (immediately before intervention)  
+- **t2**: post-treatment (after intervention)
+
+Define `post_t = 1` only for **t2**; `post_t = 0` for **t0,t1**.
+
+**Intervention (treatment).** Recommendation system upgrade assigned at the user level:
+- `rec_syst_i = 1` new system (treated)
+- `rec_syst_i = 0` old system (control)
+
+**Assignment mechanism.** Randomized A/B test: `rec_syst_i ~ Bernoulli(0.5)` (no parents in the DAG).
+
+**Outcome of interest.** Weekly minutes viewed: `minutes_viewed_it` for each user `i` and time `t ∈ {0,1,2}`.
+
+**Key estimand (DiD).** The post-vs-pre change difference between treated and control:
+\[
+\\text{DiD} = (\\bar Y_{t2, treated} - \\bar Y_{t1, treated}) - (\\bar Y_{t2, control} - \\bar Y_{t1, control})
+\]
+(We include **two pre periods** t0,t1 to support a pre-trend check in extensions.)
+
+# 2. Variables in the study (comprehensive list)
+
+## 2.1 User-level baseline variables (do not change over time)
+- `age_i`: age
+- `device_type_i`: {TV, Phone, PC, Tablet}
+- `subscription_i`: {monthly, yearly} (binary)
+- `genre_preference_i`: {Drama, Comedy, Action, Doc}
+- `baseline_i`: latent long-run engagement / activity propensity
+
+## 2.2 Time-level variables (shared shocks)
+- `major_release_t`: whether a major content/event release occurred at time `t`
+
+## 2.3 Treatment
+- `rec_syst_i`: randomized recommendation system assignment
+
+## 2.4 Outcomes (panel)
+- `minutes_viewed_it`: weekly minutes viewed at time `t`
+
+> Optional extension variable (not used as a post-treatment control):  
+> `alive_it` (retention) can be modeled as a *secondary outcome* or as a missingness mechanism.
+
+# 3. DAG (top to bottom)
+
+Below is a simple 3-time-point DAG consistent with randomized treatment. Baseline covariates are at the top, treatment is randomized, and outcomes are at the bottom.
+
+```{r dag, fig.height=4.2}
+# Draw with DiagrammeR if available; otherwise print ASCII DAG.
+if (requireNamespace("DiagrammeR", quietly = TRUE)) {
+  DiagrammeR::grViz("
+  digraph did3 {
+    graph [rankdir=TB]
+    node [shape=box, style=rounded]
+
+    age [label='age_i']
+    device [label='device_type_i']
+    sub [label='subscription_i']
+    genre [label='genre_preference_i']
+    base [label='baseline_i']
+
+    rec [label='rec_syst_i\\n(randomized)']
+    m0 [label='major_release_t0']
+    m1 [label='major_release_t1']
+    m2 [label='major_release_t2']
+
+    y0 [label='minutes_viewed_i0']
+    y1 [label='minutes_viewed_i1']
+    y2 [label='minutes_viewed_i2']
+
+    {rank=same; age device sub genre}
+    {rank=same; m0 m1 m2}
+    {rank=same; y0 y1 y2}
+
+    age -> base
+    device -> base
+    sub -> base
+
+    age -> y0; device -> y0; sub -> y0; genre -> y0; base -> y0; m0 -> y0
+    age -> y1; device -> y1; sub -> y1; genre -> y1; base -> y1; m1 -> y1
+    age -> y2; device -> y2; sub -> y2; genre -> y2; base -> y2; m2 -> y2
+
+    # Treatment affects outcome only in post (conceptually via rec_syst_i x post_t)
+    rec -> y2
+  }")
+} else {
+  cat("
+  age_i      device_i    subscription_i   genre_i
+     \\         |            /             /
+      \\        |           /             /
+         ---> baseline_i ----------------
+                  |        |         |
+major_release_t0 -> Y_i0   |         |
+major_release_t1 --------> Y_i1      |
+major_release_t2 ------------------> Y_i2
+rec_syst_i (randomized) ------------> Y_i2 (post only)
+  ")
+}
+```
+
+# 4. Joint distribution factorization (from the DAG)
+
+Let \(X_i=(age_i, device_i, subscription_i, genre_i)\), \(B_i=baseline_i\), \(M_t=major\\_release_t\), \(R_i=rec\\_syst_i\), and outcomes \(Y_{it}\) for \(t\\in\\{0,1,2\\}\).
+
+\[
+\\begin{aligned}
+p(\\{X_i\\},\\{B_i\\},\\{M_t\\},\\{R_i\\},\\{Y_{it}\\})
+&= \\prod_i p(age_i)\\,p(device_i)\\,p(subscription_i)\\,p(genre_i)\\\\
+&\\quad\\times \\prod_i p(B_i\\mid age_i,device_i,subscription_i)\\\\
+&\\quad\\times \\prod_t p(M_t)\\;\\times\\;\\prod_i p(R_i)\\\\
+&\\quad\\times \\prod_i\\prod_{t\\in\\{0,1,2\\}} p\\big(Y_{it}\\mid X_i,B_i,M_t,R_i,post_t\\big).
+\\end{aligned}
+\]
+
+# 5. Distribution choices and parameterization
+
+## 5.1 Baseline covariates
+- \(age_i\\sim \\text{Truncated Normal}(\\mu=30,\\sigma=12; [13,80])\)
+- \(device_i\\sim \\text{Categorical}(\\pi_{dev})\)
+- \(subscription_i\\sim \\text{Bernoulli}(p_{yearly})\)
+- \(genre_i\\sim \\text{Categorical}(\\pi_{genre})\)
+
+## 5.2 Latent baseline engagement
+\[
+B_i \\sim \\mathcal{N}(\\beta_0 + \\beta_1 age_i + \\beta_2 yearly_i + \\beta_3 \\mathbb{1}[device_i=TV],\\ \\sigma_B^2).
+\]
+
+## 5.3 Time shocks
+- \(M_t \\sim \\text{Bernoulli}(0.2)\) for each \(t\\in\\{0,1,2\\}\).
+
+## 5.4 Treatment
+- \(R_i \\sim \\text{Bernoulli}(0.5)\) (randomized).
+
+## 5.5 Outcome (minutes viewed)
+To ensure non-negativity and right skew, use a log-normal:
+\[
+Y_{it} \\sim \\text{LogNormal}(\\mu_{it},\\sigma_Y^2)
+\]
+with
+\[
+\\mu_{it} = \\theta_0 + \\theta_1 B_i + \\theta_2 post_t + \\theta_3 R_i
++ \\underbrace{\\theta_4(R_i\\times post_t)}_{\\text{DiD effect}}
++ \\theta_5 M_t + \\text{device/genre effects}.
+\]
+The true causal effect is encoded in \\(\\theta_4\\).
+
+# 6. Simulation code (sample top-to-bottom)
+
+```{r simulate}
+library(dplyr)
+library(tidyr)
+
+N <- 5000
+times <- 0:2
+post <- ifelse(times == 2, 1, 0)
+
+# --- 1) Baseline covariates (no parents) ---
+age <- pmin(pmax(rnorm(N, 30, 12), 13), 80)
+
+device_levels <- c("TV","Phone","PC","Tablet")
+device <- sample(device_levels, N, replace=TRUE, prob=c(0.35,0.35,0.20,0.10))
+TV <- as.integer(device == "TV")
+
+yearly <- rbinom(N, 1, 0.40)  # 1=yearly, 0=monthly
+
+genre_levels <- c("Drama","Comedy","Action","Doc")
+genre <- sample(genre_levels, N, replace=TRUE, prob=c(0.30,0.30,0.25,0.15))
+
+# --- 2) Latent baseline engagement (has parents) ---
+beta0 <- 1.0; beta1 <- 0.01; beta2 <- 0.20; beta3 <- 0.30
+sigma_B <- 0.50
+baseline <- rnorm(N, beta0 + beta1*age + beta2*yearly + beta3*TV, sigma_B)
+
+# --- 3) Treatment assignment (randomized) ---
+rec_syst <- rbinom(N, 1, 0.5)
+
+# --- 4) Time shocks (major releases) ---
+major_release <- rbinom(length(times), 1, 0.20)  # one per time point
+
+# --- 5) Outcome generation ---
+theta0 <- 2.0
+theta1 <- 0.8
+theta2 <- 0.1
+theta3 <- 0.0
+theta4 <- 0.20  # TRUE DiD effect on log scale
+theta5 <- 0.30
+sigma_Y <- 0.60
+
+dev_eff <- ifelse(device=="TV", 0.20, ifelse(device=="Phone", 0.10, 0.00))
+gen_eff <- ifelse(genre=="Action", 0.15, 0.00)
+
+Y <- matrix(NA_real_, nrow=N, ncol=length(times))
+
+for (k in seq_along(times)) {
+  mu <- theta0 + theta1*baseline + theta2*post[k] + theta3*rec_syst +
+    theta4*(rec_syst*post[k]) + theta5*major_release[k] + dev_eff + gen_eff
+  Y[,k] <- rlnorm(N, meanlog=mu, sdlog=sigma_Y)
+}
+
+# Create long panel dataset
+df <- tibble(
+  id = 1:N,
+  age = age,
+  device_type = device,
+  subscription_yearly = yearly,
+  genre_preference = genre,
+  baseline = baseline,
+  rec_syst = rec_syst
+) %>%
+  tidyr::expand_grid(t = times) %>%
+  mutate(
+    post = as.integer(t == 2),
+    major_release = major_release[t+1],
+    minutes_viewed = as.vector(Y)
+  )
+
+df
+```
+
+## 6.1 Quick sanity checks (DiD signal)
+
+```{r checks}
+# Group means by treatment x post (for DiD intuition)
+df %>%
+  group_by(rec_syst, post) %>%
+  summarise(mean_minutes = mean(minutes_viewed),
+            .groups="drop")
+
+# Trend of means over time
+if (requireNamespace("ggplot2", quietly = TRUE)) {
+  library(ggplot2)
+  df %>%
+    group_by(t, rec_syst) %>%
+    summarise(m = mean(minutes_viewed), .groups="drop") %>%
+    ggplot(aes(t, m, color=factor(rec_syst))) +
+    geom_line() + geom_point() +
+    labs(color="Treated (rec_syst)", x="time", y="mean minutes_viewed")
+}
+```
+
+## 6.2 Simple DiD regression (log outcome)
+
+```{r did_reg}
+# log outcome for approximate linear DiD
+df2 <- df %>%
+  filter(t %in% c(1,2)) %>%   # pre at t1 and post at t2
+  mutate(log_minutes = log(minutes_viewed))
+
+fit <- lm(log_minutes ~ rec_syst*post, data=df2)
+summary(fit)
+# The coefficient on rec_syst:post should be close to theta4 (=0.20) by construction.
+```
+
+# 7. Chapter 10 notes: Can we use those methods here?
+
+Chapter 10, Section 3 covers **Synthetic Control** (Abadie et al.), designed for **aggregate interventions** and comparative case studies where there is typically **one treated unit** (e.g., a state/country) and we construct a synthetic version as a weighted average of control units.
+
+**Our setting**: user-level randomized treatment with many treated and control users, plus multiple pre periods. This is naturally suited to **DiD / event-study** rather than synthetic control.
+
+## 7.1 Teams message (paste-ready)
+
+**English**
+- After reviewing Chapter 10 (Synthetic Control), we believe it is not the most appropriate approach for our problem. Synthetic control is primarily designed for aggregate interventions with one (or very few) treated units, where a weighted combination of controls is used to construct a counterfactual. In our design, the recommendation system is randomized at the user level and we have many treated and control units with pre-treatment observations, which fits the standard DiD framework well. Therefore, the key DiD assumptions are satisfied by construction (randomized assignment and stable pre-period behavior), and DiD is more suitable than synthetic control for our analysis.
+
