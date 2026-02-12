@@ -286,3 +286,114 @@ P(minutes_viewed|age,past_minutes_viewed,rec_syst,major_release,alive_i,genre_pr
 P(past_minutes_viewed)P(rec_syst)P(major_release)P(alive_i|subscription)
 
 P(subscription|age,genre_preference)P(age)P(genre_preference) 
+
+
+# Update probability caculation 02/12
+
+exogenous variable: P(Age_1),P(Age_2),P(Age_3),P(Preference),P(Rec_2)
+
+P(min_viewed_1,min_viewed_2,min_viewed_3,Age_1,Age_2,Age_3,Preference,Rec_2)=
+
+P(min_viewed_1|Preference,Age_1) P(Preference) P(Age_1) x
+P(min_viewed_2|Preference,Age_2,min_viewed_1) P(Age_2) x
+P(min_viewed_3|Preference,Age_3,min_viewed_2,Rec_2) P(Age_3) P(Rec_2)
+
+```{r}
+dag <- dagitty("
+dag {
+  
+  Preference
+  Age_1
+  Age_2
+  Age_3
+  Rec_2
+  
+  Preference -> Min_1
+  Preference -> Min_2
+  Preference -> Min_3
+  
+  Age_1 -> Min_1
+  Age_2 -> Min_2
+  Age_3 -> Min_3
+  
+  Min_1 -> Min_2
+  Min_2 -> Min_3
+  
+  Rec_2 -> Min_3
+}
+")
+
+ggdag(dag, text = TRUE, use_labels = "name") +
+  theme_dag() +
+  ggtitle("Dynamic Streaming Minutes DAG")
+
+```
+
+```{r}
+set.seed(592)
+
+n <- 1000
+
+data_3t <- data.frame(id = 1:n)
+
+# -----------------------------------
+# 1. Exogenous variables
+# -----------------------------------
+
+# Preference (constant trait)
+data_3t$Preference <- sample(
+  c("Action","Drama","Comedy","SciFi","Romance"),
+  n, replace = TRUE,
+  prob = c(0.25,0.20,0.25,0.15,0.15)
+)
+
+# Age over time (aging process)
+data_3t$Age_1 <- round(rnorm(n, mean = 20, sd = 3),1)
+data_3t$Age_2 <- data_3t$Age_1 + 1
+data_3t$Age_3 <- data_3t$Age_2 + 1
+
+# Recommendation exposure at time 2
+# (exogenous version — independent)
+data_3t$Rec_2 <- rbinom(n, 1, 0.5)
+
+# -----------------------------------
+# 2. Minutes viewed (dynamic process)
+# -----------------------------------
+
+# Time 1
+data_3t$Min_1 <-
+  50 +
+  0.6 * data_3t$Age_1 +
+  ifelse(data_3t$Preference == "Action", 6, 0) +
+  ifelse(data_3t$Preference == "Drama",  4, 0) +
+  rnorm(n, 0, 8)
+
+# Time 2 (depends on Min_1)
+data_3t$Min_2 <-
+  40 +
+  0.5 * data_3t$Age_2 +
+  0.6 * data_3t$Min_1 +
+  ifelse(data_3t$Preference == "Comedy", 5, 0) +
+  rnorm(n, 0, 8)
+
+# Time 3 (depends on Min_2 and Rec_2)
+data_3t$Min_3 <-
+  30 +
+  0.5 * data_3t$Age_3 +
+  0.6 * data_3t$Min_2 +
+  12  * data_3t$Rec_2 +
+  rnorm(n, 0, 8)
+
+head(data_3t)
+
+```
+
+
+
+
+
+
+
+
+
+
