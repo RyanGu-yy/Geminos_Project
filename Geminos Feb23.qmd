@@ -1,0 +1,256 @@
+---
+title: "Causal Evaluation of a Recommendation System Under Non-Random Assignment"
+author: "Geminos Analytics"
+date: today
+format:
+  html:
+    toc: true
+    number-sections: true
+    code-fold: false
+---
+
+## Overview
+
+This document simulates a simple recommendation setting and then estimates an average treatment effect on the treated using three difference in differences(DID) style estimators.
+
+We will do five things, in order.
+
+1.  Define the data generating process and the variables we will simulate.
+2.  Draw a DAG to make the assumed causal structure explicit.
+3.  Generate synthetic covariates, a nonrandom recommendation system indicator, and outcomes over time.
+4.  Compute the unconditional DiD estimator.
+5.  Compute adjusted estimators and compare results.
+
+## Why three time steps and what X represents
+
+We use three time steps, min_1, min_2, and min_3, to reflect a short panel where behavior and outcomes evolve over time. Conceptually, min_1 and min_2 are pre recommendation periods and min_3 is the post recommendation period. Even though the estimators below primarily compare min_2 and min_3, keeping three steps in the diagram helps us show that earlier outcomes can exist and that covariates can affect outcomes across multiple times.
+
+The node X represents observed user covariates that can affect both outcomes and whether the recommendation system is turned on. In our simulation, X includes age, genre preference, and whether there is a major release context. These are meant to stand in for typical user and context features that influence both engagement and algorithmic exposure.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+library(dagitty)
+library(ggdag)
+library(ggplot2)
+library(dplyr)
+```
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+dag_final <- dagitty("
+dag {
+  X
+  RS
+  min_1
+  min_2
+  min_3
+
+  X -> RS
+
+  X -> min_1
+  X -> min_2
+  X -> min_3
+
+  RS -> min_3
+}
+")
+
+coordinates(dag_final) <- list(
+  x = c(X = 2, RS = 4, min_1 = 0, min_2 = 2, min_3 = 4),
+  y = c(X = 3, RS = 3, min_1 = 1, min_2 = 1, min_3 = 1)
+)
+
+ggdag(dag_final) +
+  theme_dag() +
+  geom_dag_text(size = 4)
+```
+
+## Synthetic data generation
+
+Before generating the synthetic variables, we intentionally study a setting where the recommendation system indicator RS is not assigned at random. Instead, RS depends on X covariates, because in practice recommendation exposure often depends on user and context features (for example demographics, preferences, and what is trending). This creates selection into RS that we will later address with regression adjustment and inverse probability weighting.
+
+We focus on a cohort of viewers aged 20–30 to study a relatively similar group in terms of online behavior. This age group is highly active on digital platforms, making it appropriate for analyzing recommendation effects.
+
+We observe each individual over three time periods to clearly define pre-treatment and post-treatment outcomes. This simple structure allows us to track changes over time while keeping the setup transparent.
+
+We include observable covariates X that affect both recommendation assignment and outcomes. Because treatment depends on X, assignment is not random. This allows us to study how different DiD estimators perform in the presence of confounding.
+
+```{r, echo=FALSE}
+set.seed(1)
+n <- 2000
+
+# 1. Covariates (X)
+
+# Age (20-30)
+age <- round(runif(n, 20, 30))
+
+# Genre preference
+genre_preference <- sample(
+  c("Action", "Drama", "Comedy", "SciFi", "Romance"),
+  n, replace = TRUE,
+  prob = c(0.25, 0.20, 0.30, 0.15, 0.10)
+)
+
+# Major release
+major_release <- sample(
+  c("sports", "politics", "celebrity", "tech", "news"),
+  n, replace = TRUE,
+  prob = c(0.30, 0.20, 0.30, 0.10, 0.10)
+)
+
+# ----------------------------
+# 2. Treatment depends on X
+# ----------------------------
+
+genre_effect <- c(
+  Action = 0.4,
+  Drama = -0.3,
+  Comedy = 0.2,
+  SciFi = 0.5,
+  Romance = -0.2
+)
+
+release_effect <- c(
+  sports = 0.3,
+  politics = -0.4,
+  celebrity = 0.6,
+  tech = 0.2,
+  news = -0.1
+)
+
+linpred <- 
+  0.08*(age - 25) +
+  genre_effect[genre_preference] +
+  release_effect[major_release]
+
+p <- plogis(linpred)
+
+RS <- rbinom(n, 1, p)
+
+# 3. Earlier pre outcome (min_1)
+
+min_1 <- 
+  0.2*(age - 25) +
+  0.4*genre_effect[genre_preference] +
+  0.2*release_effect[major_release] +
+  rnorm(n) + 30
+
+# 4. Baseline outcome (Y1 = min_2)
+
+min_2 <- 
+  0.4*(age - 25) +
+  0.5*genre_effect[genre_preference] +
+  0.3*release_effect[major_release] +
+  rnorm(n) + 30
+
+# 5. Post outcome (Y2 = min_3)
+
+min_3 <- 
+  1 +
+  0.6*(age - 25) +
+  0.6*genre_effect[genre_preference] +
+  0.4*release_effect[major_release] +
+  2*RS +
+  rnorm(n) + 30
+
+# 6. Final dataset
+
+data <- data.frame(
+  age,
+  min_1,
+  genre_preference,
+  major_release,
+  RS,
+  min_2,
+  min_3
+)
+
+data$diff <- data$min_3 - data$min_2
+
+head(data)
+```
+
+## 1. Unconditional DiD
+
+The Unconditional Difference-in-Differences estimator compares average outcome changes between treated and untreated units without conditioning on covariates. 
+
+Identification relies on the parallel trends assumption:in the absence of treatment, treated and untreated groupswould have experienced the same average change over time.
+
+Because recommendation assignment depends on X, and X also affects outcomes, this estimator ignores confounding. If treated and untreated groups differ systematically in their covariates, the parallel trends assumption will generally fail, and the unconditional DiD estimator will be biased.
+
+```{r, echo=FALSE}
+ETT_1 <- 
+  (mean(data$min_3[data$RS==1]) - 
+   mean(data$min_2[data$RS==1])) -
+  (mean(data$min_3[data$RS==0]) - 
+   mean(data$min_2[data$RS==0]))
+
+cat("Unconditional DiD estimate of ETT:", round(ETT_1, 3), "\n")
+
+```
+
+## 2. Conditional DiD
+
+The Conditional Difference-in-Differences estimator adjusts for observed covariates X, typically using a parametric regression model. By controlling for X, it attempts to remove bias due to observed confounding.
+
+However, this approach relies on parametric assumptions about the outcome model, such as linearity and additive effects. If the functional form is misspecified, the estimator may still be biased even though it conditions on the relevant covariates.
+
+```{r, echo=FALSE}
+term1 <- mean(data$diff[data$RS==1])
+
+control_model <- lm(
+  diff ~ age + genre_preference + major_release,
+  data = subset(data, RS==0)
+)
+
+m0_pred <- predict(
+  control_model,
+  newdata = subset(data, RS==1)
+)
+
+ETT_2 <- term1 - mean(m0_pred)
+cat("Conditional DiD estimate of ETT:", round(ETT_2, 3), "\n")
+```
+
+## 3. Non-parametric DiD
+
+The Non-parametric Difference-in-Differences estimator controls for confounding without imposing parametric assumptions on the outcome model. Instead, it focuses on modeling the recommendation assignment mechanism flexibly as a function of X.
+
+It only requires a non-parametric model for the probability of receiving the recommendation conditional on X. This assignment model can be estimated using machine learning methods. By avoiding strong modeling assumptions about the outcome, this approach provides greater flexibility while still addressing confounding through adjustment for observed covariates.
+
+```{r, echo=FALSE}
+ps_model <- glm(
+  RS ~ age + genre_preference + major_release,
+  data = data,
+  family = binomial
+)
+
+data$ps <- predict(ps_model, type="response")
+
+ETT_3 <- mean(
+  (data$diff / mean(data$RS)) *
+  (data$RS - data$ps) /
+  (1 - data$ps)
+)
+
+cat("Non-parametric DiD (IPW) estimate of ETT:", round(ETT_3, 3), "\n")
+
+```
+
+```{r, echo=FALSE}
+cat("Summary of Estimated Treatment Effects:\n\n")
+
+cat("Unconditional DiD:", round(ETT_1, 3), "\n")
+cat("Conditional DiD (Regression Adjustment):", round(ETT_2, 3), "\n")
+cat("Non-parametric DiD (IPW):", round(ETT_3, 3), "\n\n")
+```
+
+Overall Conclusion
+
+Comparing the three estimators highlights the importance of accounting for confounding and modeling assumptions in causal inference. When treatment assignment depends on observed covariates, the unconditional DiD estimator may be biased because it ignores systematic differences between treated and untreated groups. The conditional DiD approach reduces bias by adjusting for observed covariates, but its validity depends on correct specification of the outcome model. The non-parametric DiD estimator offers a more flexible adjustment by modeling the treatment assignment mechanism directly, reducing reliance on strong parametric assumptions about the outcome process.
+
+Overall, this comparison illustrates how identification assumptions and modeling choices influence causal effect estimates in settings where treatment is not randomly assigned.
