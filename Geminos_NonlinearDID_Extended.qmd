@@ -1,0 +1,745 @@
+---
+title: "Nonlinear DID: Methods & Theory Extension"
+subtitle: "Conditional DID, Nonparametric DID, and Identifiability Beyond Linearity"
+author: "Geminos"
+date: today
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    number-sections: true
+    code-fold: true
+    theme: cosmo
+    math: mathjax
+---
+
+```{r setup, message=FALSE, warning=FALSE}
+library(ggplot2)
+library(tidyverse)
+library(mgcv)
+library(MatchIt)
+library(patchwork)
+set.seed(42)
+```
+
+---
+
+# Data Generating Process (Nonlinear)
+
+We generate a panel-style dataset where:
+
+- Treatment assignment $D_i$ follows a **nonlinear propensity score**
+- Baseline trends are **nonlinear** in covariates
+- Treatment effects are **heterogeneous** across age and genre
+
+## Parameters
+
+| Symbol | Meaning |
+|--------|---------|
+| $n$ | Sample size = 2000 |
+| $X_i = (\text{age}_i, g_i, r_i)$ | Covariates |
+| $D_i \in \{0,1\}$ | Treatment (RS indicator) |
+| $Y_{it}$ | Outcome at time $t \in \{1,2,3\}$ (pre-pre, pre, post) |
+| $\tau_i$ | Individual treatment effect |
+
+## DGP Code
+
+```{r dgp}
+n <- 2000
+
+# ── Covariates ──────────────────────────────────────────────
+age           <- runif(n, 20, 30)
+genre_pref    <- sample(c("Action","Drama","Comedy","SciFi","Romance"), n, replace=TRUE)
+major_release <- sample(c("sports","politics","celebrity","tech","news"),   n, replace=TRUE)
+
+genre_num   <- as.numeric(factor(genre_pref))
+release_num <- as.numeric(factor(major_release))
+
+# ── Nonlinear propensity score ───────────────────────────────
+linpred <- 
+  0.5  * sin(age / 3) +
+  0.3  * (genre_num^2) / 10 +
+ -0.4  * log(release_num + 1) +
+  0.2  * (age * genre_num) / 30
+
+ps_true <- plogis(linpred)
+D       <- rbinom(n, 1, ps_true)
+
+# ── Pre-period outcomes (nonlinear in X) ─────────────────────
+Y_pre1 <- 
+   2 * sin(age / 4) +
+   0.5 * genre_num^1.5 +
+  -0.3 * release_num^2 / 5 +
+   rnorm(n, 0, 2) + 30
+
+Y_pre2 <- 
+   3 * sin(age / 5) +
+   0.7 * genre_num^1.5 +
+  -0.4 * release_num^2 / 5 +
+   0.5 * age +
+   rnorm(n, 0, 2) + 30
+
+# ── Heterogeneous true treatment effect ──────────────────────
+tau <- tau <- 
+  1.5 +
+  0 * sin(age / 2) +
+  0 * (genre_num == 1) +   # Action: higher effect
+  0 * (genre_num == 2)     # Drama: lower effect
+ETT_true <- mean(tau[D == 1])
+cat("True ETT (treated units only):", round(ETT_true, 4), "\n")
+
+# ── Post-period outcome ──────────────────────────────────────
+Y_post <- 
+  Y_pre2 +
+  tau * D +
+  5 * sin(age / 3) +
+  rnorm(n, 0, 2)
+
+# ── Dataset ──────────────────────────────────────────────────
+data <- data.frame(
+  age, genre_pref, major_release,
+  genre_num, release_num,
+  D, ps_true,
+  Y_pre1, Y_pre2, Y_post,
+  diff = Y_post - Y_pre2,
+  tau
+)
+```
+
+## Exploratory Plots
+
+```{r plots, fig.width=10, fig.height=4}
+p1 <- ggplot(data, aes(x = age, y = Y_post, color = factor(D))) +
+  geom_point(alpha = 0.15, size = 0.8) +
+  geom_smooth(se = FALSE, linewidth = 1.2) +
+  scale_color_manual(values = c("#4477AA","#EE6677"),
+                     labels = c("Control","Treated")) +
+  labs(title = "Post-outcome vs Age", color = "Group") +
+  theme_minimal()
+
+p2 <- ggplot(data, aes(x = age, y = diff, color = factor(D))) +
+  geom_point(alpha = 0.15, size = 0.8) +
+  geom_smooth(se = FALSE, linewidth = 1.2) +
+  scale_color_manual(values = c("#4477AA","#EE6677"),
+                     labels = c("Control","Treated")) +
+  labs(title = "First Difference (Y_post - Y_pre2) vs Age", color = "Group") +
+  theme_minimal()
+
+p3 <- ggplot(data, aes(x = age, y = tau)) +
+  geom_point(alpha = 0.2, size = 0.8, color = "#228833") +
+  geom_smooth(se = FALSE, color = "#228833", linewidth = 1.2) +
+  labs(title = "True Individual Treatment Effect τ_i vs Age") +
+  theme_minimal()
+
+p1 + p2 + p3
+```
+
+---
+
+# DID Estimators
+
+## Unconditional DID (Naive)
+
+Simple two-way difference, ignoring all covariates.
+
+```{r naive-did}
+ETT_naive <- 
+  (mean(data$Y_post[data$D==1]) - mean(data$Y_pre2[data$D==1])) -
+  (mean(data$Y_post[data$D==0]) - mean(data$Y_pre2[data$D==0]))
+
+cat("Unconditional DID:", round(ETT_naive, 4), "\n")
+cat("Bias vs true ETT: ", round(ETT_naive - ETT_true, 4), "\n")
+```
+
+**Why it's biased:** Treated and control groups differ in their baseline covariates (age, genre, release), and the parallel trends assumption fails marginally because the trends are nonlinear in $X$.
+
+---
+
+## Conditional DID (Misspecified Linear)
+
+We model the counterfactual trend $\mathbb{E}[\Delta Y_i(0) \mid X_i]$ with a linear regression on controls. This is **misspecified** because the true relationship is nonlinear.
+
+```{r linear-did}
+ctrl_linear <- lm(
+  diff ~ age + genre_pref + major_release,
+  data = subset(data, D == 0)
+)
+
+# Predict counterfactual trend for treated
+cf_linear <- predict(ctrl_linear, newdata = subset(data, D == 1))
+ETT_linear <- mean(data$diff[data$D == 1]) - mean(cf_linear)
+
+cat("Linear Conditional DID:", round(ETT_linear, 4), "\n")
+cat("Bias vs true ETT:      ", round(ETT_linear - ETT_true, 4), "\n")
+```
+
+---
+
+## Conditional DID — GAM (Nonparametric Outcome Regression)
+
+We replace the linear model with a **Generalized Additive Model** to capture nonlinear covariate-outcome relationships.
+
+$$\mathbb{E}[\Delta Y_i(0) \mid X_i] = \alpha + f_1(\text{age}_i) + f_2(g_i) + f_3(r_i)$$
+
+where $f_j$ are estimated smooth functions (cubic regression splines).
+
+```{r gam-did}
+ctrl_gam <- gam(
+  diff ~ s(age) + genre_pref + major_release,
+  data = subset(data, D == 0)
+)
+
+cf_gam  <- predict(ctrl_gam, newdata = subset(data, D == 1))
+ETT_gam <- mean(data$diff[data$D == 1]) - mean(cf_gam)
+
+cat("GAM Conditional DID:", round(ETT_gam, 4), "\n")
+cat("Bias vs true ETT:   ", round(ETT_gam - ETT_true, 4), "\n")
+```
+
+---
+
+## Nonparametric DID — IPW (Abadie 2005)
+
+### Propensity Score via GAM
+
+```{r ipw-ps}
+ps_gam <- gam(
+  D ~ s(age) + genre_pref + major_release,
+  family = binomial,
+  data = data
+)
+data$ps_hat <- predict(ps_gam, type = "response")
+
+# Trim propensity scores to avoid extreme weights
+trim <- 0.02
+data$ps_trim <- pmax(trim, pmin(1 - trim, data$ps_hat))
+```
+
+### IPW-DID Estimator (Abadie 2005, eq. 3)
+
+The IPW-DID estimator for the ETT is:
+
+$$\widehat{\text{ETT}}_{\text{IPW}} = \frac{1}{\mathbb{E}[D]} \mathbb{E}\left[\frac{\Delta Y_i \cdot (D_i - \hat{p}(X_i))}{1 - \hat{p}(X_i)}\right]$$
+
+```{r ipw-did}
+pD   <- mean(data$D)
+
+ETT_ipw <- mean(
+  (data$diff / pD) *
+  (data$D - data$ps_trim) /
+  (1 - data$ps_trim)
+)
+
+cat("IPW-DID (Abadie 2005):", round(ETT_ipw, 4), "\n")
+cat("Bias vs true ETT:     ", round(ETT_ipw - ETT_true, 4), "\n")
+```
+
+---
+
+## Doubly Robust DID
+
+The doubly robust estimator combines **outcome regression** and **IPW**. It is consistent if *either* the propensity score model or the outcome model is correctly specified.
+
+For the panel ETT, a convenient normalized DR form is:
+
+$$\widehat{\text{ETT}}_{\text{DR}} =
+\frac{1}{n}\sum_i \left[
+\frac{D_i}{\bar D}
+-
+\frac{\frac{(1-D_i)\hat p(X_i)}{1-\hat p(X_i)}}{\frac{1}{n}\sum_j \frac{(1-D_j)\hat p(X_j)}{1-\hat p(X_j)}}
+\right]
+\left(\Delta Y_i - \hat m_0(X_i)\right)$$
+
+where $\hat{m}_0(X_i) = \hat{\mathbb{E}}[\Delta Y_i \mid X_i, D_i=0]$ and $\bar D = n^{-1}\sum_i D_i$.
+
+```{r dr-did}
+m0_hat <- predict(ctrl_gam, newdata = data)
+
+phat <- data$ps_trim
+pD_bar <- mean(data$D)
+
+# Normalized DR DID for panel ETT
+w_treat <- data$D / pD_bar
+w_ctrl_raw <- (1 - data$D) * phat / (1 - phat)
+w_ctrl <- w_ctrl_raw / mean(w_ctrl_raw)
+
+ETT_dr <- mean((w_treat - w_ctrl) * (data$diff - m0_hat))
+
+cat("Doubly Robust DID:", round(ETT_dr, 4), "\n")
+cat("Bias vs true ETT: ", round(ETT_dr - ETT_true, 4), "\n")
+```
+
+---
+
+## Kernel Matching DID
+
+We use **Mahalanobis-distance** nearest-neighbor matching on $(age, g, r)$ to find the closest control unit for each treated unit, then take the average difference in first-differences.
+
+```{r kernel-did, message=FALSE, warning=FALSE}
+library(MatchIt)
+
+m_out <- matchit(
+  D ~ age + genre_num + release_num,
+  data = data,
+  method = "nearest",
+  distance = "mahalanobis",
+  ratio = 1
+)
+
+matched_data <- match.data(m_out)
+
+ETT_match <- with(matched_data,
+  mean(diff[D == 1]) - mean(diff[D == 0])
+)
+
+cat("Kernel/Matching DID:", round(ETT_match, 4), "\n")
+cat("Bias vs true ETT:   ", round(ETT_match - ETT_true, 4), "\n")
+```
+
+---
+
+## Results Summary
+
+```{r summary-table}
+results <- tibble(
+  Estimator = c(
+    "True ETT",
+    "Unconditional DID",
+    "Linear Conditional DID",
+    "GAM Conditional DID",
+    "IPW-DID (Abadie 2005)",
+    "Doubly Robust DID",
+    "Matching DID (Mahalanobis)"
+  ),
+  Estimate = round(c(ETT_true, ETT_naive, ETT_linear, ETT_gam,
+                     ETT_ipw, ETT_dr, ETT_match), 4),
+  Bias = round(c(ETT_true, ETT_naive, ETT_linear, ETT_gam,
+                 ETT_ipw, ETT_dr, ETT_match) - ETT_true, 4)
+)
+
+knitr::kable(results, caption = "ETT Estimates: All Methods vs True Value")
+```
+
+```{r plot-results, fig.width=8, fig.height=4}
+results %>%
+  filter(Estimator != "True ETT") %>%
+  mutate(Estimator = fct_reorder(Estimator, abs(Bias))) %>%
+  ggplot(aes(x = Estimator, y = Estimate, fill = abs(Bias) < 0.1)) +
+  geom_col(alpha = 0.85) +
+  geom_hline(yintercept = ETT_true, linetype = "dashed", color = "red", linewidth = 1) +
+  scale_fill_manual(values = c("#CC3311","#009988"),
+                    labels = c("|Bias| ≥ 0.1", "|Bias| < 0.1")) +
+  coord_flip() +
+  labs(title = "DID Estimator Comparison",
+       subtitle = paste("True ETT =", round(ETT_true,4)),
+       y = "ETT Estimate", x = NULL, fill = "") +
+  theme_minimal()
+```
+
+---
+
+# Scenario Comparison: Why Naive DID Can Look "Okay"
+
+The first DGP is nonlinear, but the marginal violation of parallel trends is still moderate. To make the contrast clearer, we now add a **stress-test DGP** with:
+
+- stronger selection into treatment
+- more separation in covariate distributions
+- nonlinear interactions in the untreated trend
+
+This second scenario is designed so that unconditional DID has a harder time "accidentally" working well.
+
+```{r scenario-compare}
+estimate_did_suite <- function(data) {
+  ETT_true <- mean(data$tau[data$D == 1])
+
+  ETT_naive <- 
+    (mean(data$Y_post[data$D == 1]) - mean(data$Y_pre2[data$D == 1])) -
+    (mean(data$Y_post[data$D == 0]) - mean(data$Y_pre2[data$D == 0]))
+
+  ctrl_linear <- lm(
+    diff ~ age + genre_pref + major_release,
+    data = subset(data, D == 0)
+  )
+
+  cf_linear <- predict(ctrl_linear, newdata = subset(data, D == 1))
+  ETT_linear <- mean(data$diff[data$D == 1]) - mean(cf_linear)
+
+  ctrl_gam <- gam(
+    diff ~ s(age) + genre_pref + major_release,
+    data = subset(data, D == 0)
+  )
+
+  cf_gam <- predict(ctrl_gam, newdata = subset(data, D == 1))
+  ETT_gam <- mean(data$diff[data$D == 1]) - mean(cf_gam)
+
+  ps_gam <- gam(
+    D ~ s(age) + genre_pref + major_release,
+    family = binomial,
+    data = data
+  )
+
+  ps_hat <- predict(ps_gam, type = "response")
+  ps_trim <- pmax(0.02, pmin(0.98, ps_hat))
+  pD_bar <- mean(data$D)
+
+  ETT_ipw <- mean(
+    (data$diff / pD_bar) *
+    (data$D - ps_trim) /
+    (1 - ps_trim)
+  )
+
+  m0_hat <- predict(ctrl_gam, newdata = data)
+  w_treat <- data$D / pD_bar
+  w_ctrl_raw <- (1 - data$D) * ps_trim / (1 - ps_trim)
+  w_ctrl <- w_ctrl_raw / mean(w_ctrl_raw)
+
+  ETT_dr <- mean((w_treat - w_ctrl) * (data$diff - m0_hat))
+
+  m_out <- matchit(
+    D ~ age + genre_num + release_num,
+    data = data,
+    method = "nearest",
+    distance = "mahalanobis",
+    ratio = 1
+  )
+
+  matched_data <- match.data(m_out)
+  ETT_match <- with(matched_data,
+    mean(diff[D == 1]) - mean(diff[D == 0])
+  )
+
+  tibble(
+    Estimator = c(
+      "True ETT",
+      "Unconditional DID",
+      "Linear Conditional DID",
+      "GAM Conditional DID",
+      "IPW-DID (Abadie 2005)",
+      "Doubly Robust DID",
+      "Matching DID (Mahalanobis)"
+    ),
+    Estimate = c(
+      ETT_true, ETT_naive, ETT_linear, ETT_gam,
+      ETT_ipw, ETT_dr, ETT_match
+    ),
+    Bias = c(
+      0, ETT_naive - ETT_true, ETT_linear - ETT_true, ETT_gam - ETT_true,
+      ETT_ipw - ETT_true, ETT_dr - ETT_true, ETT_match - ETT_true
+    )
+  )
+}
+
+scenario_a <- results %>%
+  mutate(Scenario = "Scenario A: moderate nonlinearity")
+
+n_stress <- 2000
+
+age_s <- runif(n_stress, 20, 30)
+genre_pref_s <- sample(c("Action","Drama","Comedy","SciFi","Romance"), n_stress, replace = TRUE)
+major_release_s <- sample(c("sports","politics","celebrity","tech","news"), n_stress, replace = TRUE)
+
+genre_num_s <- as.numeric(factor(genre_pref_s))
+release_num_s <- as.numeric(factor(major_release_s))
+
+linpred_s <-
+  -1.2 +
+   1.1 * cos(age_s / 2) +
+   0.9 * (genre_pref_s == "Action") +
+   0.7 * (genre_pref_s == "SciFi") -
+   0.8 * (major_release_s == "politics") +
+   1.0 * ((age_s < 24) & (genre_pref_s == "Action")) +
+   0.8 * ((age_s > 27) & (major_release_s == "tech"))
+
+ps_true_s <- plogis(linpred_s)
+D_s <- rbinom(n_stress, 1, ps_true_s)
+
+Y_pre1_s <-
+  1.5 * sin(age_s / 2.5) +
+  0.7 * genre_num_s -
+  0.4 * release_num_s +
+  0.9 * sin(age_s * genre_num_s / 8) +
+  rnorm(n_stress, 0, 2) + 28
+
+Y_pre2_s <-
+  Y_pre1_s +
+  1.2 * cos(age_s / 2.2) +
+  0.5 * (genre_pref_s == "Action") -
+  0.6 * (major_release_s == "politics") +
+  0.8 * sin(age_s * release_num_s / 7)
+
+tau_s <-
+  1.5 +
+  0 * sin(age_s / 1.8) +
+  0 * (genre_pref_s == "Action") -
+  0 * (genre_pref_s == "Drama")
+
+m0_stress <-
+  2.8 * sin(age_s / 1.7) +
+  1.1 * (genre_pref_s == "Action") -
+  1.0 * (genre_pref_s == "Drama") +
+  1.3 * (major_release_s == "tech") -
+  1.1 * (major_release_s == "politics") +
+  1.4 * sin(age_s * genre_num_s / 3.5) +
+  1.0 * ((age_s > 26) & (major_release_s == "tech")) +rnorm(n_stress, 0, 1.5)
+
+Y_post_s <- Y_pre2_s + tau_s * D_s + m0_stress
+
+stress_data <- data.frame(
+  age = age_s,
+  genre_pref = genre_pref_s,
+  major_release = major_release_s,
+  genre_num = genre_num_s,
+  release_num = release_num_s,
+  D = D_s,
+  ps_true = ps_true_s,
+  Y_pre1 = Y_pre1_s,
+  Y_pre2 = Y_pre2_s,
+  Y_post = Y_post_s,
+  diff = Y_post_s - Y_pre2_s,
+  tau = tau_s
+)
+
+scenario_b <- estimate_did_suite(stress_data) %>%
+  mutate(Scenario = "Scenario B: strong selection + interactions")
+
+scenario_compare <- bind_rows(scenario_a, scenario_b) %>%
+  mutate(
+    Estimate = round(Estimate, 4),
+    Bias = round(Bias, 4)
+  )
+
+knitr::kable(
+  scenario_compare,
+  caption = "Two DGPs Compared: Baseline Scenario vs Stress-Test Scenario"
+)
+```
+
+## Exploratory Plots (Stress-Test Scenario)
+
+We use the same exploratory comparisons as in the first DGP so the second scenario can be read side by side.
+
+```{r scenario-b-plots, fig.width=10, fig.height=4}
+p1_stress <- ggplot(stress_data, aes(x = age, y = Y_post, color = factor(D))) +
+  geom_point(alpha = 0.15, size = 0.8) +
+  geom_smooth(se = FALSE, linewidth = 1.2) +
+  scale_color_manual(values = c("Control" = "#4477AA", "Treated" = "#EE6677")) +
+  labs(
+    title = "Post-outcome vs Age",
+    color = "Group"
+  ) +
+  theme_minimal()
+
+p2_stress <- ggplot(stress_data, aes(x = age, y = diff, color = factor(D))) +
+  geom_point(alpha = 0.15, size = 0.8) +
+  geom_smooth(se = FALSE, linewidth = 1.2) +
+  scale_color_manual(values = c("Control" = "#4477AA", "Treated" = "#EE6677")) +
+  labs(
+    title = "First Difference (Y_post - Y_pre2) vs Age",
+    color = "Group"
+  ) +
+  theme_minimal()
+
+p3_stress <- ggplot(stress_data, aes(x = age, y = tau)) +
+  geom_point(alpha = 0.2, size = 0.8, color = "#228833") +
+  geom_smooth(se = FALSE, color = "#228833", linewidth = 1.2) +
+  labs(title = "True Individual Treatment Effect τ_i vs Age") +
+  theme_minimal()
+
+p1_stress + p2_stress + p3_stress
+```
+
+```{r scenario-compare-plot, fig.width=10, fig.height=5}
+scenario_compare %>%
+  filter(Estimator != "True ETT") %>%
+  ggplot(aes(x = Estimator, y = Bias, fill = Scenario)) +
+  geom_col(position = position_dodge(width = 0.8), width = 0.7) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "gray30") +
+  coord_flip() +
+  labs(
+    title = "Bias Comparison Across Two Nonlinear DID Scenarios",
+    subtitle = "Scenario B is constructed to make unconditional DID much less reliable",
+    x = NULL,
+    y = "Bias"
+  ) +
+  theme_minimal()
+```
+
+**Interpretation:** In Scenario A, unconditional DID can still look "not too bad" because the marginal violation of parallel trends is moderate. Using the same comparison style as the first DGP, the stress-test plots make it easier to see that Scenario B has much sharper nonlinear separation between treated and control units, so naive DID deteriorates much more visibly.
+
+---
+
+# Theory: Extending Theorem 2.3 to Nonlinear Models
+
+## Setup and Notation
+
+Let $i \in \{1, \ldots, n\}$ index units, $t \in \{0, 1\}$ index time (pre/post). Define:
+
+- $Y_{it}(d)$: potential outcome for unit $i$ at time $t$ under treatment $d \in \{0,1\}$
+- $A_i \in \{0,1\}$: binary treatment indicator (received at $t=1$)
+- $X_i \in \mathcal{X} \subseteq \mathbb{R}^k$: pre-treatment covariates
+- $\Delta Y_i = Y_{i1} - Y_{i0}$: observed first difference
+- $\Delta Y_i(0) = Y_{i1}(0) - Y_{i0}(0)$: counterfactual first difference under no treatment
+
+The parameter of interest is the **Effect of Treatment on the Treated (ETT)**:
+$$\text{ETT} = \mathbb{E}[Y_{i1}(1) - Y_{i1}(0) \mid A_i = 1]$$
+
+To match the notation used in many theorem statements, this section uses $A_i$ for treatment assignment. The simulation code above keeps the variable name `D`; they refer to the same binary treatment indicator.
+
+---
+
+## Theorem 2.3 (Linear Case — Recall)
+
+In the standard linear DID setup, identification rests on:
+
+> **Assumption L (Linear Parallel Trends):** 
+> $\mathbb{E}[\Delta Y_i(0) \mid X_i, A_i] = \mathbb{E}[\Delta Y_i(0) \mid X_i] = X_i^\top \beta$
+
+Under this assumption and no-anticipation, the ETT is identified by:
+$$\text{ETT} = \mathbb{E}[\Delta Y_i \mid A_i = 1] - \mathbb{E}[X_i^\top \hat{\beta}_0 \mid A_i = 1]$$
+where $\hat{\beta}_0$ is estimated on controls only.
+
+**The linearity constraint $X_i^\top \beta$ is restrictive.** When the true conditional trend is a nonlinear function of $X_i$, this estimator is inconsistent.
+
+---
+
+## Extended Theorem: Nonlinear Identification
+
+### Assumptions
+
+**Assumption 1 (No Anticipation):**
+$$Y_{i0}(1) = Y_{i0}(0) \quad \text{a.s.}$$
+
+**Assumption 2 (Nonlinear Conditional Parallel Trends — NCPT):**
+
+There exists a measurable function $\mu_0: \mathcal{X} \to \mathbb{R}$ such that:
+$$\mathbb{E}[\Delta Y_i(0) \mid X_i = x, A_i = a] = \mu_0(x) \quad \text{for a.e. } x \in \mathcal{X}, \; a \in \{0,1\}$$
+
+That is, conditional on $X_i$, the **counterfactual trend** is the same for treated and control units — but $\mu_0$ need **not** be linear.
+
+**Assumption 3 (Overlap / Common Support):**
+$$0 < p(x) := \mathbb{P}(A_i = 1 \mid X_i = x) < 1 \quad \text{for a.e. } x \in \mathcal{X}$$
+
+**Assumption 4 (Regularity):**
+$\mathbb{E}[|\Delta Y_i|^2] < \infty$ and $\mathbb{E}[|\mu_0(X_i)|^2] < \infty$.
+
+---
+
+### Theorem (Nonlinear DID Identifiability)
+
+> **Theorem.** Under Assumptions 1–4, the ETT is identified. Specifically:
+>
+> $$\text{ETT} = \mathbb{E}[\Delta Y_i \mid A_i = 1] - \mathbb{E}[\mu_0(X_i) \mid A_i = 1]$$
+>
+> where $\mu_0(x) = \mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 0]$ is identified from the control group.
+
+#### Proof
+
+**Step 1: Decompose the observed first difference for treated units.**
+
+For a treated unit ($A_i = 1$), the observed outcome at $t=1$ is $Y_{i1} = Y_{i1}(1)$. Therefore:
+$$\Delta Y_i = Y_{i1}(1) - Y_{i0}(1) \stackrel{A1}{=} Y_{i1}(1) - Y_{i0}(0)$$
+
+Add and subtract $Y_{i1}(0)$:
+$$\Delta Y_i = \underbrace{[Y_{i1}(1) - Y_{i1}(0)]}_{\tau_i} + \underbrace{[Y_{i1}(0) - Y_{i0}(0)]}_{\Delta Y_i(0)}$$
+
+**Step 2: Take conditional expectation given $X_i$ within the treated group.**
+
+$$\mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 1] = \mathbb{E}[\tau_i \mid X_i = x, A_i = 1] + \mathbb{E}[\Delta Y_i(0) \mid X_i = x, A_i = 1]$$
+
+By Assumption 2 (NCPT):
+$$\mathbb{E}[\Delta Y_i(0) \mid X_i = x, A_i = 1] = \mu_0(x)$$
+
+Therefore:
+$$\mathbb{E}[\tau_i \mid X_i = x, A_i = 1] = \mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 1] - \mu_0(x)$$
+
+**Step 3: Integrate over the covariate distribution of the treated group.**
+
+$$\text{ETT} = \mathbb{E}[\tau_i \mid A_i = 1] = \int_{\mathcal{X}} \mathbb{E}[\tau_i \mid X_i = x, A_i = 1] \, d F_{X|A=1}(x)$$
+
+$$= \int_{\mathcal{X}} \left[\mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 1] - \mu_0(x)\right] dF_{X|A=1}(x)$$
+
+$$= \mathbb{E}[\Delta Y_i \mid A_i = 1] - \mathbb{E}[\mu_0(X_i) \mid A_i = 1] \tag{$\star$}$$
+
+**Step 4: Identifiability of $\mu_0$.**
+
+By Assumption 3 (overlap), $\mathbb{P}(A_i = 0 \mid X_i = x) > 0$ a.e. Therefore:
+$$\mu_0(x) = \mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 0]$$
+is identified from the joint distribution of $(\Delta Y_i, X_i)$ among controls — observed in the data.
+
+**Step 5: All terms in $(\star)$ are identified.**
+
+- $\mathbb{E}[\Delta Y_i \mid A_i = 1]$: observed sample mean of first differences among treated units.
+- $\mathbb{E}[\mu_0(X_i) \mid A_i = 1]$: plug in the identified $\mu_0$ evaluated at treated covariate values, then average. This is consistent for any nonparametric estimator of $\mu_0$ satisfying standard regularity conditions.
+
+**Therefore, $\text{ETT}$ is nonparametrically identified.** $\blacksquare$
+
+---
+
+### Corollary: IPW Representation
+
+Under Assumptions 1–4, the ETT also admits the **inverse-probability-weighted** representation:
+
+$$\text{ETT} = \frac{1}{\mathbb{E}[A_i]} \mathbb{E}\left[\frac{(A_i - p(X_i))}{1-p(X_i)} \Delta Y_i\right]$$
+
+**Proof sketch:** By Bayes' rule,
+$$dF_{X|A=0}(x) = \frac{1-p(x)}{1-\mathbb{E}[A]} dF_X(x)$$
+
+Substituting into $(\star)$:
+$$\mathbb{E}[\mu_0(X_i) \mid A_i=1] = \frac{1}{\mathbb{E}[A]} \mathbb{E}\left[\frac{p(X_i)(1-p(X_i))}{1-p(X_i)} \cdot \frac{\Delta Y_i}{1} \cdot \frac{1-p(X_i)}{p(X_i)} \right] \ldots$$
+
+Expanding the full derivation via iterated expectations recovers the Abadie (2005) IPW formula. $\square$
+
+---
+
+### Corollary: Doubly Robust Representation
+
+Define the doubly robust score:
+$$\psi_i = A_i \Delta Y_i - (A_i - p(X_i)) \mu_0(X_i) - \frac{p(X_i)(A_i - p(X_i))}{1-p(X_i)} \Delta Y_i$$
+
+Then $\mathbb{E}[\psi_i] / \mathbb{E}[A_i] = \text{ETT}$ whenever **either** $\mu_0$ or $p$ is correctly specified.
+
+**Key implication for nonlinear settings:** Both $\mu_0$ and $p$ can be estimated nonparametrically (e.g., via GAMs, forests, neural networks). The doubly robust estimator achieves $\sqrt{n}$-consistency even when each nuisance component is estimated at slower rates, provided the product of their errors vanishes fast enough (Chernozhukov et al. 2018, double machine learning).
+
+---
+
+## Comparison: Linear vs Nonlinear Parallel Trends
+
+| Feature | Theorem 2.3 (Linear) | Extended Theorem (Nonlinear) |
+|---------|---------------------|------------------------------|
+| Trend assumption | $\mu_0(x) = x^\top\beta$ | $\mu_0(x)$ unrestricted |
+| Estimation of $\mu_0$ | OLS on controls | Any nonparametric method |
+| Identification condition | Linearity + overlap | NCPT + overlap (weaker) |
+| Risk of misspecification | High (nonlinear DGP) | Low |
+| Rate of convergence of ETT | $\sqrt{n}$ (parametric) | $\sqrt{n}$ (if DR or cross-fitting used) |
+| Testable? | Pre-trend F-test | Nonparametric pre-trend test |
+
+---
+
+## Discussion: What NCPT Rules Out
+
+The NCPT assumption is **weaker** than linear parallel trends but still imposes a meaningful restriction:
+
+$$\mathbb{E}[\Delta Y_i(0) \mid X_i, A_i] = \mu_0(X_i)$$
+
+This rules out:
+
+1. **Selection on trends:** Cases where treated units have systematically different counterfactual trends even after conditioning on $X_i$. In this case, the ETT is generally not identified without stronger assumptions (e.g., IV, bounding approaches).
+
+2. **Time-varying treatment effect on control trend:** If $\mu_0$ itself shifts due to spillovers or general equilibrium effects, $\mu_0$ is contaminated.
+
+**Testability via Pre-Trends:**
+
+With two pre-periods ($t=-1, t=0$), NCPT implies:
+$$\mathbb{E}[Y_{i0}(0) - Y_{i,-1}(0) \mid X_i, A_i=1] = \mu_0^{\text{pre}}(X_i)$$
+
+which can be tested nonparametrically using the pre-period data (e.g., via a permutation test on $\hat{\mu}_0^{\text{pre}}$ residuals). This is the nonlinear analogue of the parallel pre-trends F-test.
+
+---
+
+# References
+
+- Abadie, A. (2005). Semiparametric difference-in-differences estimators. *Review of Economic Studies*, 72(1), 1–19.
+- Callaway, B., & Sant'Anna, P. H. C. (2021). Difference-in-differences with multiple time periods. *Journal of Econometrics*, 225(2), 200–230.
+- Chernozhukov, V., Chetverikov, D., Demirer, M., et al. (2018). Double/debiased machine learning for treatment and structural parameters. *The Econometrics Journal*, 21(1), C1–C68.
+- Sant'Anna, P. H. C., & Zhao, J. (2020). Doubly robust difference-in-differences estimators. *Journal of Econometrics*, 219(1), 101–122.
+- Roth, J., Sant'Anna, P. H. C., Bilinski, A., & Poe, J. (2023). What's trending in difference-in-differences? *Journal of Econometrics*, 235(2), 2218–2244.

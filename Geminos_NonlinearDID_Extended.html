@@ -1,0 +1,1642 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Geminos">
+<meta name="dcterms.date" content="2026-04-29">
+
+<title>Nonlinear DID: Methods &amp; Theory Extension</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="Geminos_NonlinearDID_Extended_files/libs/clipboard/clipboard.min.js"></script>
+<script src="Geminos_NonlinearDID_Extended_files/libs/quarto-html/quarto.js" type="module"></script>
+<script src="Geminos_NonlinearDID_Extended_files/libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="Geminos_NonlinearDID_Extended_files/libs/quarto-html/popper.min.js"></script>
+<script src="Geminos_NonlinearDID_Extended_files/libs/quarto-html/tippy.umd.min.js"></script>
+<script src="Geminos_NonlinearDID_Extended_files/libs/quarto-html/anchor.min.js"></script>
+<link href="Geminos_NonlinearDID_Extended_files/libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="Geminos_NonlinearDID_Extended_files/libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="Geminos_NonlinearDID_Extended_files/libs/bootstrap/bootstrap.min.js"></script>
+<link href="Geminos_NonlinearDID_Extended_files/libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="Geminos_NonlinearDID_Extended_files/libs/bootstrap/bootstrap-8ffd5f67044e5306d9846f29df41dda5.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+</head>
+
+<body class="quarto-light">
+
+<div id="quarto-content" class="page-columns page-rows-contents page-layout-article">
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#data-generating-process-nonlinear" id="toc-data-generating-process-nonlinear" class="nav-link active" data-scroll-target="#data-generating-process-nonlinear"><span class="header-section-number">1</span> Data Generating Process (Nonlinear)</a>
+  <ul class="collapse">
+  <li><a href="#parameters" id="toc-parameters" class="nav-link" data-scroll-target="#parameters"><span class="header-section-number">1.1</span> Parameters</a></li>
+  <li><a href="#dgp-code" id="toc-dgp-code" class="nav-link" data-scroll-target="#dgp-code"><span class="header-section-number">1.2</span> DGP Code</a></li>
+  <li><a href="#exploratory-plots" id="toc-exploratory-plots" class="nav-link" data-scroll-target="#exploratory-plots"><span class="header-section-number">1.3</span> Exploratory Plots</a></li>
+  </ul></li>
+  <li><a href="#did-estimators" id="toc-did-estimators" class="nav-link" data-scroll-target="#did-estimators"><span class="header-section-number">2</span> DID Estimators</a>
+  <ul class="collapse">
+  <li><a href="#unconditional-did-naive" id="toc-unconditional-did-naive" class="nav-link" data-scroll-target="#unconditional-did-naive"><span class="header-section-number">2.1</span> Unconditional DID (Naive)</a></li>
+  <li><a href="#conditional-did-misspecified-linear" id="toc-conditional-did-misspecified-linear" class="nav-link" data-scroll-target="#conditional-did-misspecified-linear"><span class="header-section-number">2.2</span> Conditional DID (Misspecified Linear)</a></li>
+  <li><a href="#conditional-did-gam-nonparametric-outcome-regression" id="toc-conditional-did-gam-nonparametric-outcome-regression" class="nav-link" data-scroll-target="#conditional-did-gam-nonparametric-outcome-regression"><span class="header-section-number">2.3</span> Conditional DID — GAM (Nonparametric Outcome Regression)</a></li>
+  <li><a href="#nonparametric-did-ipw-abadie-2005" id="toc-nonparametric-did-ipw-abadie-2005" class="nav-link" data-scroll-target="#nonparametric-did-ipw-abadie-2005"><span class="header-section-number">2.4</span> Nonparametric DID — IPW (Abadie 2005)</a>
+  <ul class="collapse">
+  <li><a href="#propensity-score-via-gam" id="toc-propensity-score-via-gam" class="nav-link" data-scroll-target="#propensity-score-via-gam"><span class="header-section-number">2.4.1</span> Propensity Score via GAM</a></li>
+  <li><a href="#ipw-did-estimator-abadie-2005-eq.-3" id="toc-ipw-did-estimator-abadie-2005-eq.-3" class="nav-link" data-scroll-target="#ipw-did-estimator-abadie-2005-eq.-3"><span class="header-section-number">2.4.2</span> IPW-DID Estimator (Abadie 2005, eq. 3)</a></li>
+  </ul></li>
+  <li><a href="#doubly-robust-did" id="toc-doubly-robust-did" class="nav-link" data-scroll-target="#doubly-robust-did"><span class="header-section-number">2.5</span> Doubly Robust DID</a></li>
+  <li><a href="#kernel-matching-did" id="toc-kernel-matching-did" class="nav-link" data-scroll-target="#kernel-matching-did"><span class="header-section-number">2.6</span> Kernel Matching DID</a></li>
+  <li><a href="#results-summary" id="toc-results-summary" class="nav-link" data-scroll-target="#results-summary"><span class="header-section-number">2.7</span> Results Summary</a></li>
+  </ul></li>
+  <li><a href="#scenario-comparison-why-naive-did-can-look-okay" id="toc-scenario-comparison-why-naive-did-can-look-okay" class="nav-link" data-scroll-target="#scenario-comparison-why-naive-did-can-look-okay"><span class="header-section-number">3</span> Scenario Comparison: Why Naive DID Can Look “Okay”</a>
+  <ul class="collapse">
+  <li><a href="#exploratory-plots-stress-test-scenario" id="toc-exploratory-plots-stress-test-scenario" class="nav-link" data-scroll-target="#exploratory-plots-stress-test-scenario"><span class="header-section-number">3.1</span> Exploratory Plots (Stress-Test Scenario)</a></li>
+  </ul></li>
+  <li><a href="#theory-extending-theorem-2.3-to-nonlinear-models" id="toc-theory-extending-theorem-2.3-to-nonlinear-models" class="nav-link" data-scroll-target="#theory-extending-theorem-2.3-to-nonlinear-models"><span class="header-section-number">4</span> Theory: Extending Theorem 2.3 to Nonlinear Models</a>
+  <ul class="collapse">
+  <li><a href="#setup-and-notation" id="toc-setup-and-notation" class="nav-link" data-scroll-target="#setup-and-notation"><span class="header-section-number">4.1</span> Setup and Notation</a></li>
+  <li><a href="#theorem-2.3-linear-case-recall" id="toc-theorem-2.3-linear-case-recall" class="nav-link" data-scroll-target="#theorem-2.3-linear-case-recall"><span class="header-section-number">4.2</span> Theorem 2.3 (Linear Case — Recall)</a></li>
+  <li><a href="#extended-theorem-nonlinear-identification" id="toc-extended-theorem-nonlinear-identification" class="nav-link" data-scroll-target="#extended-theorem-nonlinear-identification"><span class="header-section-number">4.3</span> Extended Theorem: Nonlinear Identification</a>
+  <ul class="collapse">
+  <li><a href="#assumptions" id="toc-assumptions" class="nav-link" data-scroll-target="#assumptions"><span class="header-section-number">4.3.1</span> Assumptions</a></li>
+  <li><a href="#theorem-nonlinear-did-identifiability" id="toc-theorem-nonlinear-did-identifiability" class="nav-link" data-scroll-target="#theorem-nonlinear-did-identifiability"><span class="header-section-number">4.3.2</span> Theorem (Nonlinear DID Identifiability)</a></li>
+  <li><a href="#corollary-ipw-representation" id="toc-corollary-ipw-representation" class="nav-link" data-scroll-target="#corollary-ipw-representation"><span class="header-section-number">4.3.3</span> Corollary: IPW Representation</a></li>
+  <li><a href="#corollary-doubly-robust-representation" id="toc-corollary-doubly-robust-representation" class="nav-link" data-scroll-target="#corollary-doubly-robust-representation"><span class="header-section-number">4.3.4</span> Corollary: Doubly Robust Representation</a></li>
+  </ul></li>
+  <li><a href="#comparison-linear-vs-nonlinear-parallel-trends" id="toc-comparison-linear-vs-nonlinear-parallel-trends" class="nav-link" data-scroll-target="#comparison-linear-vs-nonlinear-parallel-trends"><span class="header-section-number">4.4</span> Comparison: Linear vs Nonlinear Parallel Trends</a></li>
+  <li><a href="#discussion-what-ncpt-rules-out" id="toc-discussion-what-ncpt-rules-out" class="nav-link" data-scroll-target="#discussion-what-ncpt-rules-out"><span class="header-section-number">4.5</span> Discussion: What NCPT Rules Out</a></li>
+  </ul></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">5</span> References</a></li>
+  </ul>
+</nav>
+</div>
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default">
+<div class="quarto-title">
+<h1 class="title">Nonlinear DID: Methods &amp; Theory Extension</h1>
+<p class="subtitle lead">Conditional DID, Nonparametric DID, and Identifiability Beyond Linearity</p>
+</div>
+
+
+
+<div class="quarto-title-meta">
+
+    <div>
+    <div class="quarto-title-meta-heading">Author</div>
+    <div class="quarto-title-meta-contents">
+             <p>Geminos </p>
+          </div>
+  </div>
+    
+    <div>
+    <div class="quarto-title-meta-heading">Published</div>
+    <div class="quarto-title-meta-contents">
+      <p class="date">April 29, 2026</p>
+    </div>
+  </div>
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(ggplot2)</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(tidyverse)</span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(mgcv)</span>
+<span id="cb1-4"><a href="#cb1-4" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MatchIt)</span>
+<span id="cb1-5"><a href="#cb1-5" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(patchwork)</span>
+<span id="cb1-6"><a href="#cb1-6" aria-hidden="true" tabindex="-1"></a><span class="fu">set.seed</span>(<span class="dv">42</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+<hr>
+<section id="data-generating-process-nonlinear" class="level1" data-number="1">
+<h1 data-number="1"><span class="header-section-number">1</span> Data Generating Process (Nonlinear)</h1>
+<p>We generate a panel-style dataset where:</p>
+<ul>
+<li>Treatment assignment <span class="math inline">\(D_i\)</span> follows a <strong>nonlinear propensity score</strong></li>
+<li>Baseline trends are <strong>nonlinear</strong> in covariates</li>
+<li>Treatment effects are <strong>heterogeneous</strong> across age and genre</li>
+</ul>
+<section id="parameters" class="level2" data-number="1.1">
+<h2 data-number="1.1" class="anchored" data-anchor-id="parameters"><span class="header-section-number">1.1</span> Parameters</h2>
+<table class="caption-top table">
+<thead>
+<tr class="header">
+<th>Symbol</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><span class="math inline">\(n\)</span></td>
+<td>Sample size = 2000</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(X_i = (\text{age}_i, g_i, r_i)\)</span></td>
+<td>Covariates</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(D_i \in \{0,1\}\)</span></td>
+<td>Treatment (RS indicator)</td>
+</tr>
+<tr class="even">
+<td><span class="math inline">\(Y_{it}\)</span></td>
+<td>Outcome at time <span class="math inline">\(t \in \{1,2,3\}\)</span> (pre-pre, pre, post)</td>
+</tr>
+<tr class="odd">
+<td><span class="math inline">\(\tau_i\)</span></td>
+<td>Individual treatment effect</td>
+</tr>
+</tbody>
+</table>
+</section>
+<section id="dgp-code" class="level2" data-number="1.2">
+<h2 data-number="1.2" class="anchored" data-anchor-id="dgp-code"><span class="header-section-number">1.2</span> DGP Code</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb2"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a>n <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Covariates ──────────────────────────────────────────────</span></span>
+<span id="cb2-4"><a href="#cb2-4" aria-hidden="true" tabindex="-1"></a>age           <span class="ot">&lt;-</span> <span class="fu">runif</span>(n, <span class="dv">20</span>, <span class="dv">30</span>)</span>
+<span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>genre_pref    <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"Action"</span>,<span class="st">"Drama"</span>,<span class="st">"Comedy"</span>,<span class="st">"SciFi"</span>,<span class="st">"Romance"</span>), n, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>major_release <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"sports"</span>,<span class="st">"politics"</span>,<span class="st">"celebrity"</span>,<span class="st">"tech"</span>,<span class="st">"news"</span>),   n, <span class="at">replace=</span><span class="cn">TRUE</span>)</span>
+<span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>genre_num   <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">factor</span>(genre_pref))</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>release_num <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">factor</span>(major_release))</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Nonlinear propensity score ───────────────────────────────</span></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>linpred <span class="ot">&lt;-</span> </span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.5</span>  <span class="sc">*</span> <span class="fu">sin</span>(age <span class="sc">/</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.3</span>  <span class="sc">*</span> (genre_num<span class="sc">^</span><span class="dv">2</span>) <span class="sc">/</span> <span class="dv">10</span> <span class="sc">+</span></span>
+<span id="cb2-15"><a href="#cb2-15" aria-hidden="true" tabindex="-1"></a> <span class="sc">-</span><span class="fl">0.4</span>  <span class="sc">*</span> <span class="fu">log</span>(release_num <span class="sc">+</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb2-16"><a href="#cb2-16" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.2</span>  <span class="sc">*</span> (age <span class="sc">*</span> genre_num) <span class="sc">/</span> <span class="dv">30</span></span>
+<span id="cb2-17"><a href="#cb2-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-18"><a href="#cb2-18" aria-hidden="true" tabindex="-1"></a>ps_true <span class="ot">&lt;-</span> <span class="fu">plogis</span>(linpred)</span>
+<span id="cb2-19"><a href="#cb2-19" aria-hidden="true" tabindex="-1"></a>D       <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n, <span class="dv">1</span>, ps_true)</span>
+<span id="cb2-20"><a href="#cb2-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-21"><a href="#cb2-21" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Pre-period outcomes (nonlinear in X) ─────────────────────</span></span>
+<span id="cb2-22"><a href="#cb2-22" aria-hidden="true" tabindex="-1"></a>Y_pre1 <span class="ot">&lt;-</span> </span>
+<span id="cb2-23"><a href="#cb2-23" aria-hidden="true" tabindex="-1"></a>   <span class="dv">2</span> <span class="sc">*</span> <span class="fu">sin</span>(age <span class="sc">/</span> <span class="dv">4</span>) <span class="sc">+</span></span>
+<span id="cb2-24"><a href="#cb2-24" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.5</span> <span class="sc">*</span> genre_num<span class="sc">^</span><span class="fl">1.5</span> <span class="sc">+</span></span>
+<span id="cb2-25"><a href="#cb2-25" aria-hidden="true" tabindex="-1"></a>  <span class="sc">-</span><span class="fl">0.3</span> <span class="sc">*</span> release_num<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="dv">5</span> <span class="sc">+</span></span>
+<span id="cb2-26"><a href="#cb2-26" aria-hidden="true" tabindex="-1"></a>   <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">2</span>) <span class="sc">+</span> <span class="dv">30</span></span>
+<span id="cb2-27"><a href="#cb2-27" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-28"><a href="#cb2-28" aria-hidden="true" tabindex="-1"></a>Y_pre2 <span class="ot">&lt;-</span> </span>
+<span id="cb2-29"><a href="#cb2-29" aria-hidden="true" tabindex="-1"></a>   <span class="dv">3</span> <span class="sc">*</span> <span class="fu">sin</span>(age <span class="sc">/</span> <span class="dv">5</span>) <span class="sc">+</span></span>
+<span id="cb2-30"><a href="#cb2-30" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.7</span> <span class="sc">*</span> genre_num<span class="sc">^</span><span class="fl">1.5</span> <span class="sc">+</span></span>
+<span id="cb2-31"><a href="#cb2-31" aria-hidden="true" tabindex="-1"></a>  <span class="sc">-</span><span class="fl">0.4</span> <span class="sc">*</span> release_num<span class="sc">^</span><span class="dv">2</span> <span class="sc">/</span> <span class="dv">5</span> <span class="sc">+</span></span>
+<span id="cb2-32"><a href="#cb2-32" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.5</span> <span class="sc">*</span> age <span class="sc">+</span></span>
+<span id="cb2-33"><a href="#cb2-33" aria-hidden="true" tabindex="-1"></a>   <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">2</span>) <span class="sc">+</span> <span class="dv">30</span></span>
+<span id="cb2-34"><a href="#cb2-34" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-35"><a href="#cb2-35" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Heterogeneous true treatment effect ──────────────────────</span></span>
+<span id="cb2-36"><a href="#cb2-36" aria-hidden="true" tabindex="-1"></a>tau <span class="ot">&lt;-</span> tau <span class="ot">&lt;-</span> </span>
+<span id="cb2-37"><a href="#cb2-37" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.5</span> <span class="sc">+</span></span>
+<span id="cb2-38"><a href="#cb2-38" aria-hidden="true" tabindex="-1"></a>  <span class="dv">0</span> <span class="sc">*</span> <span class="fu">sin</span>(age <span class="sc">/</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb2-39"><a href="#cb2-39" aria-hidden="true" tabindex="-1"></a>  <span class="dv">0</span> <span class="sc">*</span> (genre_num <span class="sc">==</span> <span class="dv">1</span>) <span class="sc">+</span>   <span class="co"># Action: higher effect</span></span>
+<span id="cb2-40"><a href="#cb2-40" aria-hidden="true" tabindex="-1"></a>  <span class="dv">0</span> <span class="sc">*</span> (genre_num <span class="sc">==</span> <span class="dv">2</span>)     <span class="co"># Drama: lower effect</span></span>
+<span id="cb2-41"><a href="#cb2-41" aria-hidden="true" tabindex="-1"></a>ETT_true <span class="ot">&lt;-</span> <span class="fu">mean</span>(tau[D <span class="sc">==</span> <span class="dv">1</span>])</span>
+<span id="cb2-42"><a href="#cb2-42" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"True ETT (treated units only):"</span>, <span class="fu">round</span>(ETT_true, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>True ETT (treated units only): 1.5 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb4"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Post-period outcome ──────────────────────────────────────</span></span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>Y_post <span class="ot">&lt;-</span> </span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>  Y_pre2 <span class="sc">+</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>  tau <span class="sc">*</span> D <span class="sc">+</span></span>
+<span id="cb4-5"><a href="#cb4-5" aria-hidden="true" tabindex="-1"></a>  <span class="dv">5</span> <span class="sc">*</span> <span class="fu">sin</span>(age <span class="sc">/</span> <span class="dv">3</span>) <span class="sc">+</span></span>
+<span id="cb4-6"><a href="#cb4-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnorm</span>(n, <span class="dv">0</span>, <span class="dv">2</span>)</span>
+<span id="cb4-7"><a href="#cb4-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb4-8"><a href="#cb4-8" aria-hidden="true" tabindex="-1"></a><span class="co"># ── Dataset ──────────────────────────────────────────────────</span></span>
+<span id="cb4-9"><a href="#cb4-9" aria-hidden="true" tabindex="-1"></a>data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb4-10"><a href="#cb4-10" aria-hidden="true" tabindex="-1"></a>  age, genre_pref, major_release,</span>
+<span id="cb4-11"><a href="#cb4-11" aria-hidden="true" tabindex="-1"></a>  genre_num, release_num,</span>
+<span id="cb4-12"><a href="#cb4-12" aria-hidden="true" tabindex="-1"></a>  D, ps_true,</span>
+<span id="cb4-13"><a href="#cb4-13" aria-hidden="true" tabindex="-1"></a>  Y_pre1, Y_pre2, Y_post,</span>
+<span id="cb4-14"><a href="#cb4-14" aria-hidden="true" tabindex="-1"></a>  <span class="at">diff =</span> Y_post <span class="sc">-</span> Y_pre2,</span>
+<span id="cb4-15"><a href="#cb4-15" aria-hidden="true" tabindex="-1"></a>  tau</span>
+<span id="cb4-16"><a href="#cb4-16" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</section>
+<section id="exploratory-plots" class="level2" data-number="1.3">
+<h2 data-number="1.3" class="anchored" data-anchor-id="exploratory-plots"><span class="header-section-number">1.3</span> Exploratory Plots</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>p1 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(data, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> Y_post, <span class="at">color =</span> <span class="fu">factor</span>(D))) <span class="sc">+</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#4477AA"</span>,<span class="st">"#EE6677"</span>),</span>
+<span id="cb5-5"><a href="#cb5-5" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Control"</span>,<span class="st">"Treated"</span>)) <span class="sc">+</span></span>
+<span id="cb5-6"><a href="#cb5-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"Post-outcome vs Age"</span>, <span class="at">color =</span> <span class="st">"Group"</span>) <span class="sc">+</span></span>
+<span id="cb5-7"><a href="#cb5-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb5-8"><a href="#cb5-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-9"><a href="#cb5-9" aria-hidden="true" tabindex="-1"></a>p2 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(data, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> diff, <span class="at">color =</span> <span class="fu">factor</span>(D))) <span class="sc">+</span></span>
+<span id="cb5-10"><a href="#cb5-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb5-11"><a href="#cb5-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb5-12"><a href="#cb5-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#4477AA"</span>,<span class="st">"#EE6677"</span>),</span>
+<span id="cb5-13"><a href="#cb5-13" aria-hidden="true" tabindex="-1"></a>                     <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"Control"</span>,<span class="st">"Treated"</span>)) <span class="sc">+</span></span>
+<span id="cb5-14"><a href="#cb5-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"First Difference (Y_post - Y_pre2) vs Age"</span>, <span class="at">color =</span> <span class="st">"Group"</span>) <span class="sc">+</span></span>
+<span id="cb5-15"><a href="#cb5-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb5-16"><a href="#cb5-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-17"><a href="#cb5-17" aria-hidden="true" tabindex="-1"></a>p3 <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(data, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> tau)) <span class="sc">+</span></span>
+<span id="cb5-18"><a href="#cb5-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">size =</span> <span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">"#228833"</span>) <span class="sc">+</span></span>
+<span id="cb5-19"><a href="#cb5-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color =</span> <span class="st">"#228833"</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb5-20"><a href="#cb5-20" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"True Individual Treatment Effect τ_i vs Age"</span>) <span class="sc">+</span></span>
+<span id="cb5-21"><a href="#cb5-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb5-22"><a href="#cb5-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb5-23"><a href="#cb5-23" aria-hidden="true" tabindex="-1"></a>p1 <span class="sc">+</span> p2 <span class="sc">+</span> p3</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'
+`geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'
+`geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Failed to fit group -1.
+Caused by error in `gam.reparam()`:
+! NA/NaN/Inf in foreign function call (arg 3)</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Geminos_NonlinearDID_Extended_files/figure-html/plots-1.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="did-estimators" class="level1" data-number="2">
+<h1 data-number="2"><span class="header-section-number">2</span> DID Estimators</h1>
+<section id="unconditional-did-naive" class="level2" data-number="2.1">
+<h2 data-number="2.1" class="anchored" data-anchor-id="unconditional-did-naive"><span class="header-section-number">2.1</span> Unconditional DID (Naive)</h2>
+<p>Simple two-way difference, ignoring all covariates.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>ETT_naive <span class="ot">&lt;-</span> </span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  (<span class="fu">mean</span>(data<span class="sc">$</span>Y_post[data<span class="sc">$</span>D<span class="sc">==</span><span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(data<span class="sc">$</span>Y_pre2[data<span class="sc">$</span>D<span class="sc">==</span><span class="dv">1</span>])) <span class="sc">-</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  (<span class="fu">mean</span>(data<span class="sc">$</span>Y_post[data<span class="sc">$</span>D<span class="sc">==</span><span class="dv">0</span>]) <span class="sc">-</span> <span class="fu">mean</span>(data<span class="sc">$</span>Y_pre2[data<span class="sc">$</span>D<span class="sc">==</span><span class="dv">0</span>]))</span>
+<span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Unconditional DID:"</span>, <span class="fu">round</span>(ETT_naive, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Unconditional DID: 1.7491 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb10"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Bias vs true ETT: "</span>, <span class="fu">round</span>(ETT_naive <span class="sc">-</span> ETT_true, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Bias vs true ETT:  0.2491 </code></pre>
+</div>
+</div>
+<p><strong>Why it’s biased:</strong> Treated and control groups differ in their baseline covariates (age, genre, release), and the parallel trends assumption fails marginally because the trends are nonlinear in <span class="math inline">\(X\)</span>.</p>
+<hr>
+</section>
+<section id="conditional-did-misspecified-linear" class="level2" data-number="2.2">
+<h2 data-number="2.2" class="anchored" data-anchor-id="conditional-did-misspecified-linear"><span class="header-section-number">2.2</span> Conditional DID (Misspecified Linear)</h2>
+<p>We model the counterfactual trend <span class="math inline">\(\mathbb{E}[\Delta Y_i(0) \mid X_i]\)</span> with a linear regression on controls. This is <strong>misspecified</strong> because the true relationship is nonlinear.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb12"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>ctrl_linear <span class="ot">&lt;-</span> <span class="fu">lm</span>(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>  diff <span class="sc">~</span> age <span class="sc">+</span> genre_pref <span class="sc">+</span> major_release,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Predict counterfactual trend for treated</span></span>
+<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a>cf_linear <span class="ot">&lt;-</span> <span class="fu">predict</span>(ctrl_linear, <span class="at">newdata =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">1</span>))</span>
+<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>ETT_linear <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>diff[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(cf_linear)</span>
+<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Linear Conditional DID:"</span>, <span class="fu">round</span>(ETT_linear, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Linear Conditional DID: 1.6839 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Bias vs true ETT:      "</span>, <span class="fu">round</span>(ETT_linear <span class="sc">-</span> ETT_true, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Bias vs true ETT:       0.1839 </code></pre>
+</div>
+</div>
+<hr>
+</section>
+<section id="conditional-did-gam-nonparametric-outcome-regression" class="level2" data-number="2.3">
+<h2 data-number="2.3" class="anchored" data-anchor-id="conditional-did-gam-nonparametric-outcome-regression"><span class="header-section-number">2.3</span> Conditional DID — GAM (Nonparametric Outcome Regression)</h2>
+<p>We replace the linear model with a <strong>Generalized Additive Model</strong> to capture nonlinear covariate-outcome relationships.</p>
+<p><span class="math display">\[\mathbb{E}[\Delta Y_i(0) \mid X_i] = \alpha + f_1(\text{age}_i) + f_2(g_i) + f_3(r_i)\]</span></p>
+<p>where <span class="math inline">\(f_j\)</span> are estimated smooth functions (cubic regression splines).</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>ctrl_gam <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>  diff <span class="sc">~</span> <span class="fu">s</span>(age) <span class="sc">+</span> genre_pref <span class="sc">+</span> major_release,</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>cf_gam  <span class="ot">&lt;-</span> <span class="fu">predict</span>(ctrl_gam, <span class="at">newdata =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">1</span>))</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>ETT_gam <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>diff[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(cf_gam)</span>
+<span id="cb16-8"><a href="#cb16-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb16-9"><a href="#cb16-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"GAM Conditional DID:"</span>, <span class="fu">round</span>(ETT_gam, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>GAM Conditional DID: 1.3373 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Bias vs true ETT:   "</span>, <span class="fu">round</span>(ETT_gam <span class="sc">-</span> ETT_true, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Bias vs true ETT:    -0.1627 </code></pre>
+</div>
+</div>
+<hr>
+</section>
+<section id="nonparametric-did-ipw-abadie-2005" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="nonparametric-did-ipw-abadie-2005"><span class="header-section-number">2.4</span> Nonparametric DID — IPW (Abadie 2005)</h2>
+<section id="propensity-score-via-gam" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="propensity-score-via-gam"><span class="header-section-number">2.4.1</span> Propensity Score via GAM</h3>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>ps_gam <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> <span class="fu">s</span>(age) <span class="sc">+</span> genre_pref <span class="sc">+</span> major_release,</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>  <span class="at">family =</span> binomial,</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> data</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>ps_hat <span class="ot">&lt;-</span> <span class="fu">predict</span>(ps_gam, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb20-8"><a href="#cb20-8" aria-hidden="true" tabindex="-1"></a><span class="co"># Trim propensity scores to avoid extreme weights</span></span>
+<span id="cb20-9"><a href="#cb20-9" aria-hidden="true" tabindex="-1"></a>trim <span class="ot">&lt;-</span> <span class="fl">0.02</span></span>
+<span id="cb20-10"><a href="#cb20-10" aria-hidden="true" tabindex="-1"></a>data<span class="sc">$</span>ps_trim <span class="ot">&lt;-</span> <span class="fu">pmax</span>(trim, <span class="fu">pmin</span>(<span class="dv">1</span> <span class="sc">-</span> trim, data<span class="sc">$</span>ps_hat))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+</div>
+</section>
+<section id="ipw-did-estimator-abadie-2005-eq.-3" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="ipw-did-estimator-abadie-2005-eq.-3"><span class="header-section-number">2.4.2</span> IPW-DID Estimator (Abadie 2005, eq. 3)</h3>
+<p>The IPW-DID estimator for the ETT is:</p>
+<p><span class="math display">\[\widehat{\text{ETT}}_{\text{IPW}} = \frac{1}{\mathbb{E}[D]} \mathbb{E}\left[\frac{\Delta Y_i \cdot (D_i - \hat{p}(X_i))}{1 - \hat{p}(X_i)}\right]\]</span></p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a>pD   <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>D)</span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-3"><a href="#cb21-3" aria-hidden="true" tabindex="-1"></a>ETT_ipw <span class="ot">&lt;-</span> <span class="fu">mean</span>(</span>
+<span id="cb21-4"><a href="#cb21-4" aria-hidden="true" tabindex="-1"></a>  (data<span class="sc">$</span>diff <span class="sc">/</span> pD) <span class="sc">*</span></span>
+<span id="cb21-5"><a href="#cb21-5" aria-hidden="true" tabindex="-1"></a>  (data<span class="sc">$</span>D <span class="sc">-</span> data<span class="sc">$</span>ps_trim) <span class="sc">/</span></span>
+<span id="cb21-6"><a href="#cb21-6" aria-hidden="true" tabindex="-1"></a>  (<span class="dv">1</span> <span class="sc">-</span> data<span class="sc">$</span>ps_trim)</span>
+<span id="cb21-7"><a href="#cb21-7" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb21-8"><a href="#cb21-8" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb21-9"><a href="#cb21-9" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"IPW-DID (Abadie 2005):"</span>, <span class="fu">round</span>(ETT_ipw, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>IPW-DID (Abadie 2005): 1.3377 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb23"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb23-1"><a href="#cb23-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Bias vs true ETT:     "</span>, <span class="fu">round</span>(ETT_ipw <span class="sc">-</span> ETT_true, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Bias vs true ETT:      -0.1623 </code></pre>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="doubly-robust-did" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="doubly-robust-did"><span class="header-section-number">2.5</span> Doubly Robust DID</h2>
+<p>The doubly robust estimator combines <strong>outcome regression</strong> and <strong>IPW</strong>. It is consistent if <em>either</em> the propensity score model or the outcome model is correctly specified.</p>
+<p>For the panel ETT, a convenient normalized DR form is:</p>
+<p><span class="math display">\[\widehat{\text{ETT}}_{\text{DR}} =
+\frac{1}{n}\sum_i \left[
+\frac{D_i}{\bar D}
+-
+\frac{\frac{(1-D_i)\hat p(X_i)}{1-\hat p(X_i)}}{\frac{1}{n}\sum_j \frac{(1-D_j)\hat p(X_j)}{1-\hat p(X_j)}}
+\right]
+\left(\Delta Y_i - \hat m_0(X_i)\right)\]</span></p>
+<p>where <span class="math inline">\(\hat{m}_0(X_i) = \hat{\mathbb{E}}[\Delta Y_i \mid X_i, D_i=0]\)</span> and <span class="math inline">\(\bar D = n^{-1}\sum_i D_i\)</span>.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb25"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb25-1"><a href="#cb25-1" aria-hidden="true" tabindex="-1"></a>m0_hat <span class="ot">&lt;-</span> <span class="fu">predict</span>(ctrl_gam, <span class="at">newdata =</span> data)</span>
+<span id="cb25-2"><a href="#cb25-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-3"><a href="#cb25-3" aria-hidden="true" tabindex="-1"></a>phat <span class="ot">&lt;-</span> data<span class="sc">$</span>ps_trim</span>
+<span id="cb25-4"><a href="#cb25-4" aria-hidden="true" tabindex="-1"></a>pD_bar <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>D)</span>
+<span id="cb25-5"><a href="#cb25-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-6"><a href="#cb25-6" aria-hidden="true" tabindex="-1"></a><span class="co"># Normalized DR DID for panel ETT</span></span>
+<span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>w_treat <span class="ot">&lt;-</span> data<span class="sc">$</span>D <span class="sc">/</span> pD_bar</span>
+<span id="cb25-8"><a href="#cb25-8" aria-hidden="true" tabindex="-1"></a>w_ctrl_raw <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> data<span class="sc">$</span>D) <span class="sc">*</span> phat <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> phat)</span>
+<span id="cb25-9"><a href="#cb25-9" aria-hidden="true" tabindex="-1"></a>w_ctrl <span class="ot">&lt;-</span> w_ctrl_raw <span class="sc">/</span> <span class="fu">mean</span>(w_ctrl_raw)</span>
+<span id="cb25-10"><a href="#cb25-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-11"><a href="#cb25-11" aria-hidden="true" tabindex="-1"></a>ETT_dr <span class="ot">&lt;-</span> <span class="fu">mean</span>((w_treat <span class="sc">-</span> w_ctrl) <span class="sc">*</span> (data<span class="sc">$</span>diff <span class="sc">-</span> m0_hat))</span>
+<span id="cb25-12"><a href="#cb25-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb25-13"><a href="#cb25-13" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Doubly Robust DID:"</span>, <span class="fu">round</span>(ETT_dr, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Doubly Robust DID: 1.3369 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb27"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb27-1"><a href="#cb27-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Bias vs true ETT: "</span>, <span class="fu">round</span>(ETT_dr <span class="sc">-</span> ETT_true, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Bias vs true ETT:  -0.1631 </code></pre>
+</div>
+</div>
+<hr>
+</section>
+<section id="kernel-matching-did" class="level2" data-number="2.6">
+<h2 data-number="2.6" class="anchored" data-anchor-id="kernel-matching-did"><span class="header-section-number">2.6</span> Kernel Matching DID</h2>
+<p>We use <strong>Mahalanobis-distance</strong> nearest-neighbor matching on <span class="math inline">\((age, g, r)\)</span> to find the closest control unit for each treated unit, then take the average difference in first-differences.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(MatchIt)</span>
+<span id="cb29-2"><a href="#cb29-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-3"><a href="#cb29-3" aria-hidden="true" tabindex="-1"></a>m_out <span class="ot">&lt;-</span> <span class="fu">matchit</span>(</span>
+<span id="cb29-4"><a href="#cb29-4" aria-hidden="true" tabindex="-1"></a>  D <span class="sc">~</span> age <span class="sc">+</span> genre_num <span class="sc">+</span> release_num,</span>
+<span id="cb29-5"><a href="#cb29-5" aria-hidden="true" tabindex="-1"></a>  <span class="at">data =</span> data,</span>
+<span id="cb29-6"><a href="#cb29-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">method =</span> <span class="st">"nearest"</span>,</span>
+<span id="cb29-7"><a href="#cb29-7" aria-hidden="true" tabindex="-1"></a>  <span class="at">distance =</span> <span class="st">"mahalanobis"</span>,</span>
+<span id="cb29-8"><a href="#cb29-8" aria-hidden="true" tabindex="-1"></a>  <span class="at">ratio =</span> <span class="dv">1</span></span>
+<span id="cb29-9"><a href="#cb29-9" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-10"><a href="#cb29-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-11"><a href="#cb29-11" aria-hidden="true" tabindex="-1"></a>matched_data <span class="ot">&lt;-</span> <span class="fu">match.data</span>(m_out)</span>
+<span id="cb29-12"><a href="#cb29-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-13"><a href="#cb29-13" aria-hidden="true" tabindex="-1"></a>ETT_match <span class="ot">&lt;-</span> <span class="fu">with</span>(matched_data,</span>
+<span id="cb29-14"><a href="#cb29-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mean</span>(diff[D <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(diff[D <span class="sc">==</span> <span class="dv">0</span>])</span>
+<span id="cb29-15"><a href="#cb29-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb29-16"><a href="#cb29-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb29-17"><a href="#cb29-17" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Kernel/Matching DID:"</span>, <span class="fu">round</span>(ETT_match, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Kernel/Matching DID: 1.836 </code></pre>
+</div>
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="st">"Bias vs true ETT:   "</span>, <span class="fu">round</span>(ETT_match <span class="sc">-</span> ETT_true, <span class="dv">4</span>), <span class="st">"</span><span class="sc">\n</span><span class="st">"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stdout">
+<pre><code>Bias vs true ETT:    0.336 </code></pre>
+</div>
+</div>
+<hr>
+</section>
+<section id="results-summary" class="level2" data-number="2.7">
+<h2 data-number="2.7" class="anchored" data-anchor-id="results-summary"><span class="header-section-number">2.7</span> Results Summary</h2>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a>results <span class="ot">&lt;-</span> <span class="fu">tibble</span>(</span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>  <span class="at">Estimator =</span> <span class="fu">c</span>(</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a>    <span class="st">"True ETT"</span>,</span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Unconditional DID"</span>,</span>
+<span id="cb33-5"><a href="#cb33-5" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Linear Conditional DID"</span>,</span>
+<span id="cb33-6"><a href="#cb33-6" aria-hidden="true" tabindex="-1"></a>    <span class="st">"GAM Conditional DID"</span>,</span>
+<span id="cb33-7"><a href="#cb33-7" aria-hidden="true" tabindex="-1"></a>    <span class="st">"IPW-DID (Abadie 2005)"</span>,</span>
+<span id="cb33-8"><a href="#cb33-8" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Doubly Robust DID"</span>,</span>
+<span id="cb33-9"><a href="#cb33-9" aria-hidden="true" tabindex="-1"></a>    <span class="st">"Matching DID (Mahalanobis)"</span></span>
+<span id="cb33-10"><a href="#cb33-10" aria-hidden="true" tabindex="-1"></a>  ),</span>
+<span id="cb33-11"><a href="#cb33-11" aria-hidden="true" tabindex="-1"></a>  <span class="at">Estimate =</span> <span class="fu">round</span>(<span class="fu">c</span>(ETT_true, ETT_naive, ETT_linear, ETT_gam,</span>
+<span id="cb33-12"><a href="#cb33-12" aria-hidden="true" tabindex="-1"></a>                     ETT_ipw, ETT_dr, ETT_match), <span class="dv">4</span>),</span>
+<span id="cb33-13"><a href="#cb33-13" aria-hidden="true" tabindex="-1"></a>  <span class="at">Bias =</span> <span class="fu">round</span>(<span class="fu">c</span>(ETT_true, ETT_naive, ETT_linear, ETT_gam,</span>
+<span id="cb33-14"><a href="#cb33-14" aria-hidden="true" tabindex="-1"></a>                 ETT_ipw, ETT_dr, ETT_match) <span class="sc">-</span> ETT_true, <span class="dv">4</span>)</span>
+<span id="cb33-15"><a href="#cb33-15" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb33-16"><a href="#cb33-16" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb33-17"><a href="#cb33-17" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(results, <span class="at">caption =</span> <span class="st">"ETT Estimates: All Methods vs True Value"</span>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>ETT Estimates: All Methods vs True Value</caption>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Estimator</th>
+<th style="text-align: right;">Estimate</th>
+<th style="text-align: right;">Bias</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">True ETT</td>
+<td style="text-align: right;">1.5000</td>
+<td style="text-align: right;">0.0000</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Unconditional DID</td>
+<td style="text-align: right;">1.7491</td>
+<td style="text-align: right;">0.2491</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Linear Conditional DID</td>
+<td style="text-align: right;">1.6839</td>
+<td style="text-align: right;">0.1839</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GAM Conditional DID</td>
+<td style="text-align: right;">1.3373</td>
+<td style="text-align: right;">-0.1627</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">IPW-DID (Abadie 2005)</td>
+<td style="text-align: right;">1.3377</td>
+<td style="text-align: right;">-0.1623</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Doubly Robust DID</td>
+<td style="text-align: right;">1.3369</td>
+<td style="text-align: right;">-0.1631</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Matching DID (Mahalanobis)</td>
+<td style="text-align: right;">1.8360</td>
+<td style="text-align: right;">0.3360</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a>results <span class="sc">%&gt;%</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Estimator <span class="sc">!=</span> <span class="st">"True ETT"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb34-3"><a href="#cb34-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Estimator =</span> <span class="fu">fct_reorder</span>(Estimator, <span class="fu">abs</span>(Bias))) <span class="sc">%&gt;%</span></span>
+<span id="cb34-4"><a href="#cb34-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> Estimator, <span class="at">y =</span> Estimate, <span class="at">fill =</span> <span class="fu">abs</span>(Bias) <span class="sc">&lt;</span> <span class="fl">0.1</span>)) <span class="sc">+</span></span>
+<span id="cb34-5"><a href="#cb34-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">alpha =</span> <span class="fl">0.85</span>) <span class="sc">+</span></span>
+<span id="cb34-6"><a href="#cb34-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> ETT_true, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"red"</span>, <span class="at">linewidth =</span> <span class="dv">1</span>) <span class="sc">+</span></span>
+<span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_fill_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"#CC3311"</span>,<span class="st">"#009988"</span>),</span>
+<span id="cb34-8"><a href="#cb34-8" aria-hidden="true" tabindex="-1"></a>                    <span class="at">labels =</span> <span class="fu">c</span>(<span class="st">"|Bias| ≥ 0.1"</span>, <span class="st">"|Bias| &lt; 0.1"</span>)) <span class="sc">+</span></span>
+<span id="cb34-9"><a href="#cb34-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb34-10"><a href="#cb34-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"DID Estimator Comparison"</span>,</span>
+<span id="cb34-11"><a href="#cb34-11" aria-hidden="true" tabindex="-1"></a>       <span class="at">subtitle =</span> <span class="fu">paste</span>(<span class="st">"True ETT ="</span>, <span class="fu">round</span>(ETT_true,<span class="dv">4</span>)),</span>
+<span id="cb34-12"><a href="#cb34-12" aria-hidden="true" tabindex="-1"></a>       <span class="at">y =</span> <span class="st">"ETT Estimate"</span>, <span class="at">x =</span> <span class="cn">NULL</span>, <span class="at">fill =</span> <span class="st">""</span>) <span class="sc">+</span></span>
+<span id="cb34-13"><a href="#cb34-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Geminos_NonlinearDID_Extended_files/figure-html/plot-results-1.png" class="img-fluid figure-img" width="768"></p>
+</figure>
+</div>
+</div>
+</div>
+<hr>
+</section>
+</section>
+<section id="scenario-comparison-why-naive-did-can-look-okay" class="level1" data-number="3">
+<h1 data-number="3"><span class="header-section-number">3</span> Scenario Comparison: Why Naive DID Can Look “Okay”</h1>
+<p>The first DGP is nonlinear, but the marginal violation of parallel trends is still moderate. To make the contrast clearer, we now add a <strong>stress-test DGP</strong> with:</p>
+<ul>
+<li>stronger selection into treatment</li>
+<li>more separation in covariate distributions</li>
+<li>nonlinear interactions in the untreated trend</li>
+</ul>
+<p>This second scenario is designed so that unconditional DID has a harder time “accidentally” working well.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb35"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb35-1"><a href="#cb35-1" aria-hidden="true" tabindex="-1"></a>estimate_did_suite <span class="ot">&lt;-</span> <span class="cf">function</span>(data) {</span>
+<span id="cb35-2"><a href="#cb35-2" aria-hidden="true" tabindex="-1"></a>  ETT_true <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>tau[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">1</span>])</span>
+<span id="cb35-3"><a href="#cb35-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-4"><a href="#cb35-4" aria-hidden="true" tabindex="-1"></a>  ETT_naive <span class="ot">&lt;-</span> </span>
+<span id="cb35-5"><a href="#cb35-5" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">mean</span>(data<span class="sc">$</span>Y_post[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(data<span class="sc">$</span>Y_pre2[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">1</span>])) <span class="sc">-</span></span>
+<span id="cb35-6"><a href="#cb35-6" aria-hidden="true" tabindex="-1"></a>    (<span class="fu">mean</span>(data<span class="sc">$</span>Y_post[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">0</span>]) <span class="sc">-</span> <span class="fu">mean</span>(data<span class="sc">$</span>Y_pre2[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">0</span>]))</span>
+<span id="cb35-7"><a href="#cb35-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-8"><a href="#cb35-8" aria-hidden="true" tabindex="-1"></a>  ctrl_linear <span class="ot">&lt;-</span> <span class="fu">lm</span>(</span>
+<span id="cb35-9"><a href="#cb35-9" aria-hidden="true" tabindex="-1"></a>    diff <span class="sc">~</span> age <span class="sc">+</span> genre_pref <span class="sc">+</span> major_release,</span>
+<span id="cb35-10"><a href="#cb35-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb35-11"><a href="#cb35-11" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-12"><a href="#cb35-12" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-13"><a href="#cb35-13" aria-hidden="true" tabindex="-1"></a>  cf_linear <span class="ot">&lt;-</span> <span class="fu">predict</span>(ctrl_linear, <span class="at">newdata =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">1</span>))</span>
+<span id="cb35-14"><a href="#cb35-14" aria-hidden="true" tabindex="-1"></a>  ETT_linear <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>diff[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(cf_linear)</span>
+<span id="cb35-15"><a href="#cb35-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-16"><a href="#cb35-16" aria-hidden="true" tabindex="-1"></a>  ctrl_gam <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb35-17"><a href="#cb35-17" aria-hidden="true" tabindex="-1"></a>    diff <span class="sc">~</span> <span class="fu">s</span>(age) <span class="sc">+</span> genre_pref <span class="sc">+</span> major_release,</span>
+<span id="cb35-18"><a href="#cb35-18" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">0</span>)</span>
+<span id="cb35-19"><a href="#cb35-19" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-20"><a href="#cb35-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-21"><a href="#cb35-21" aria-hidden="true" tabindex="-1"></a>  cf_gam <span class="ot">&lt;-</span> <span class="fu">predict</span>(ctrl_gam, <span class="at">newdata =</span> <span class="fu">subset</span>(data, D <span class="sc">==</span> <span class="dv">1</span>))</span>
+<span id="cb35-22"><a href="#cb35-22" aria-hidden="true" tabindex="-1"></a>  ETT_gam <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>diff[data<span class="sc">$</span>D <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(cf_gam)</span>
+<span id="cb35-23"><a href="#cb35-23" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-24"><a href="#cb35-24" aria-hidden="true" tabindex="-1"></a>  ps_gam <span class="ot">&lt;-</span> <span class="fu">gam</span>(</span>
+<span id="cb35-25"><a href="#cb35-25" aria-hidden="true" tabindex="-1"></a>    D <span class="sc">~</span> <span class="fu">s</span>(age) <span class="sc">+</span> genre_pref <span class="sc">+</span> major_release,</span>
+<span id="cb35-26"><a href="#cb35-26" aria-hidden="true" tabindex="-1"></a>    <span class="at">family =</span> binomial,</span>
+<span id="cb35-27"><a href="#cb35-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> data</span>
+<span id="cb35-28"><a href="#cb35-28" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-29"><a href="#cb35-29" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-30"><a href="#cb35-30" aria-hidden="true" tabindex="-1"></a>  ps_hat <span class="ot">&lt;-</span> <span class="fu">predict</span>(ps_gam, <span class="at">type =</span> <span class="st">"response"</span>)</span>
+<span id="cb35-31"><a href="#cb35-31" aria-hidden="true" tabindex="-1"></a>  ps_trim <span class="ot">&lt;-</span> <span class="fu">pmax</span>(<span class="fl">0.02</span>, <span class="fu">pmin</span>(<span class="fl">0.98</span>, ps_hat))</span>
+<span id="cb35-32"><a href="#cb35-32" aria-hidden="true" tabindex="-1"></a>  pD_bar <span class="ot">&lt;-</span> <span class="fu">mean</span>(data<span class="sc">$</span>D)</span>
+<span id="cb35-33"><a href="#cb35-33" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-34"><a href="#cb35-34" aria-hidden="true" tabindex="-1"></a>  ETT_ipw <span class="ot">&lt;-</span> <span class="fu">mean</span>(</span>
+<span id="cb35-35"><a href="#cb35-35" aria-hidden="true" tabindex="-1"></a>    (data<span class="sc">$</span>diff <span class="sc">/</span> pD_bar) <span class="sc">*</span></span>
+<span id="cb35-36"><a href="#cb35-36" aria-hidden="true" tabindex="-1"></a>    (data<span class="sc">$</span>D <span class="sc">-</span> ps_trim) <span class="sc">/</span></span>
+<span id="cb35-37"><a href="#cb35-37" aria-hidden="true" tabindex="-1"></a>    (<span class="dv">1</span> <span class="sc">-</span> ps_trim)</span>
+<span id="cb35-38"><a href="#cb35-38" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-39"><a href="#cb35-39" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-40"><a href="#cb35-40" aria-hidden="true" tabindex="-1"></a>  m0_hat <span class="ot">&lt;-</span> <span class="fu">predict</span>(ctrl_gam, <span class="at">newdata =</span> data)</span>
+<span id="cb35-41"><a href="#cb35-41" aria-hidden="true" tabindex="-1"></a>  w_treat <span class="ot">&lt;-</span> data<span class="sc">$</span>D <span class="sc">/</span> pD_bar</span>
+<span id="cb35-42"><a href="#cb35-42" aria-hidden="true" tabindex="-1"></a>  w_ctrl_raw <span class="ot">&lt;-</span> (<span class="dv">1</span> <span class="sc">-</span> data<span class="sc">$</span>D) <span class="sc">*</span> ps_trim <span class="sc">/</span> (<span class="dv">1</span> <span class="sc">-</span> ps_trim)</span>
+<span id="cb35-43"><a href="#cb35-43" aria-hidden="true" tabindex="-1"></a>  w_ctrl <span class="ot">&lt;-</span> w_ctrl_raw <span class="sc">/</span> <span class="fu">mean</span>(w_ctrl_raw)</span>
+<span id="cb35-44"><a href="#cb35-44" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-45"><a href="#cb35-45" aria-hidden="true" tabindex="-1"></a>  ETT_dr <span class="ot">&lt;-</span> <span class="fu">mean</span>((w_treat <span class="sc">-</span> w_ctrl) <span class="sc">*</span> (data<span class="sc">$</span>diff <span class="sc">-</span> m0_hat))</span>
+<span id="cb35-46"><a href="#cb35-46" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-47"><a href="#cb35-47" aria-hidden="true" tabindex="-1"></a>  m_out <span class="ot">&lt;-</span> <span class="fu">matchit</span>(</span>
+<span id="cb35-48"><a href="#cb35-48" aria-hidden="true" tabindex="-1"></a>    D <span class="sc">~</span> age <span class="sc">+</span> genre_num <span class="sc">+</span> release_num,</span>
+<span id="cb35-49"><a href="#cb35-49" aria-hidden="true" tabindex="-1"></a>    <span class="at">data =</span> data,</span>
+<span id="cb35-50"><a href="#cb35-50" aria-hidden="true" tabindex="-1"></a>    <span class="at">method =</span> <span class="st">"nearest"</span>,</span>
+<span id="cb35-51"><a href="#cb35-51" aria-hidden="true" tabindex="-1"></a>    <span class="at">distance =</span> <span class="st">"mahalanobis"</span>,</span>
+<span id="cb35-52"><a href="#cb35-52" aria-hidden="true" tabindex="-1"></a>    <span class="at">ratio =</span> <span class="dv">1</span></span>
+<span id="cb35-53"><a href="#cb35-53" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-54"><a href="#cb35-54" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-55"><a href="#cb35-55" aria-hidden="true" tabindex="-1"></a>  matched_data <span class="ot">&lt;-</span> <span class="fu">match.data</span>(m_out)</span>
+<span id="cb35-56"><a href="#cb35-56" aria-hidden="true" tabindex="-1"></a>  ETT_match <span class="ot">&lt;-</span> <span class="fu">with</span>(matched_data,</span>
+<span id="cb35-57"><a href="#cb35-57" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mean</span>(diff[D <span class="sc">==</span> <span class="dv">1</span>]) <span class="sc">-</span> <span class="fu">mean</span>(diff[D <span class="sc">==</span> <span class="dv">0</span>])</span>
+<span id="cb35-58"><a href="#cb35-58" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-59"><a href="#cb35-59" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-60"><a href="#cb35-60" aria-hidden="true" tabindex="-1"></a>  <span class="fu">tibble</span>(</span>
+<span id="cb35-61"><a href="#cb35-61" aria-hidden="true" tabindex="-1"></a>    <span class="at">Estimator =</span> <span class="fu">c</span>(</span>
+<span id="cb35-62"><a href="#cb35-62" aria-hidden="true" tabindex="-1"></a>      <span class="st">"True ETT"</span>,</span>
+<span id="cb35-63"><a href="#cb35-63" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Unconditional DID"</span>,</span>
+<span id="cb35-64"><a href="#cb35-64" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Linear Conditional DID"</span>,</span>
+<span id="cb35-65"><a href="#cb35-65" aria-hidden="true" tabindex="-1"></a>      <span class="st">"GAM Conditional DID"</span>,</span>
+<span id="cb35-66"><a href="#cb35-66" aria-hidden="true" tabindex="-1"></a>      <span class="st">"IPW-DID (Abadie 2005)"</span>,</span>
+<span id="cb35-67"><a href="#cb35-67" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Doubly Robust DID"</span>,</span>
+<span id="cb35-68"><a href="#cb35-68" aria-hidden="true" tabindex="-1"></a>      <span class="st">"Matching DID (Mahalanobis)"</span></span>
+<span id="cb35-69"><a href="#cb35-69" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb35-70"><a href="#cb35-70" aria-hidden="true" tabindex="-1"></a>    <span class="at">Estimate =</span> <span class="fu">c</span>(</span>
+<span id="cb35-71"><a href="#cb35-71" aria-hidden="true" tabindex="-1"></a>      ETT_true, ETT_naive, ETT_linear, ETT_gam,</span>
+<span id="cb35-72"><a href="#cb35-72" aria-hidden="true" tabindex="-1"></a>      ETT_ipw, ETT_dr, ETT_match</span>
+<span id="cb35-73"><a href="#cb35-73" aria-hidden="true" tabindex="-1"></a>    ),</span>
+<span id="cb35-74"><a href="#cb35-74" aria-hidden="true" tabindex="-1"></a>    <span class="at">Bias =</span> <span class="fu">c</span>(</span>
+<span id="cb35-75"><a href="#cb35-75" aria-hidden="true" tabindex="-1"></a>      <span class="dv">0</span>, ETT_naive <span class="sc">-</span> ETT_true, ETT_linear <span class="sc">-</span> ETT_true, ETT_gam <span class="sc">-</span> ETT_true,</span>
+<span id="cb35-76"><a href="#cb35-76" aria-hidden="true" tabindex="-1"></a>      ETT_ipw <span class="sc">-</span> ETT_true, ETT_dr <span class="sc">-</span> ETT_true, ETT_match <span class="sc">-</span> ETT_true</span>
+<span id="cb35-77"><a href="#cb35-77" aria-hidden="true" tabindex="-1"></a>    )</span>
+<span id="cb35-78"><a href="#cb35-78" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-79"><a href="#cb35-79" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb35-80"><a href="#cb35-80" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-81"><a href="#cb35-81" aria-hidden="true" tabindex="-1"></a>scenario_a <span class="ot">&lt;-</span> results <span class="sc">%&gt;%</span></span>
+<span id="cb35-82"><a href="#cb35-82" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Scenario =</span> <span class="st">"Scenario A: moderate nonlinearity"</span>)</span>
+<span id="cb35-83"><a href="#cb35-83" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-84"><a href="#cb35-84" aria-hidden="true" tabindex="-1"></a>n_stress <span class="ot">&lt;-</span> <span class="dv">2000</span></span>
+<span id="cb35-85"><a href="#cb35-85" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-86"><a href="#cb35-86" aria-hidden="true" tabindex="-1"></a>age_s <span class="ot">&lt;-</span> <span class="fu">runif</span>(n_stress, <span class="dv">20</span>, <span class="dv">30</span>)</span>
+<span id="cb35-87"><a href="#cb35-87" aria-hidden="true" tabindex="-1"></a>genre_pref_s <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"Action"</span>,<span class="st">"Drama"</span>,<span class="st">"Comedy"</span>,<span class="st">"SciFi"</span>,<span class="st">"Romance"</span>), n_stress, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb35-88"><a href="#cb35-88" aria-hidden="true" tabindex="-1"></a>major_release_s <span class="ot">&lt;-</span> <span class="fu">sample</span>(<span class="fu">c</span>(<span class="st">"sports"</span>,<span class="st">"politics"</span>,<span class="st">"celebrity"</span>,<span class="st">"tech"</span>,<span class="st">"news"</span>), n_stress, <span class="at">replace =</span> <span class="cn">TRUE</span>)</span>
+<span id="cb35-89"><a href="#cb35-89" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-90"><a href="#cb35-90" aria-hidden="true" tabindex="-1"></a>genre_num_s <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">factor</span>(genre_pref_s))</span>
+<span id="cb35-91"><a href="#cb35-91" aria-hidden="true" tabindex="-1"></a>release_num_s <span class="ot">&lt;-</span> <span class="fu">as.numeric</span>(<span class="fu">factor</span>(major_release_s))</span>
+<span id="cb35-92"><a href="#cb35-92" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-93"><a href="#cb35-93" aria-hidden="true" tabindex="-1"></a>linpred_s <span class="ot">&lt;-</span></span>
+<span id="cb35-94"><a href="#cb35-94" aria-hidden="true" tabindex="-1"></a>  <span class="sc">-</span><span class="fl">1.2</span> <span class="sc">+</span></span>
+<span id="cb35-95"><a href="#cb35-95" aria-hidden="true" tabindex="-1"></a>   <span class="fl">1.1</span> <span class="sc">*</span> <span class="fu">cos</span>(age_s <span class="sc">/</span> <span class="dv">2</span>) <span class="sc">+</span></span>
+<span id="cb35-96"><a href="#cb35-96" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.9</span> <span class="sc">*</span> (genre_pref_s <span class="sc">==</span> <span class="st">"Action"</span>) <span class="sc">+</span></span>
+<span id="cb35-97"><a href="#cb35-97" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.7</span> <span class="sc">*</span> (genre_pref_s <span class="sc">==</span> <span class="st">"SciFi"</span>) <span class="sc">-</span></span>
+<span id="cb35-98"><a href="#cb35-98" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.8</span> <span class="sc">*</span> (major_release_s <span class="sc">==</span> <span class="st">"politics"</span>) <span class="sc">+</span></span>
+<span id="cb35-99"><a href="#cb35-99" aria-hidden="true" tabindex="-1"></a>   <span class="fl">1.0</span> <span class="sc">*</span> ((age_s <span class="sc">&lt;</span> <span class="dv">24</span>) <span class="sc">&amp;</span> (genre_pref_s <span class="sc">==</span> <span class="st">"Action"</span>)) <span class="sc">+</span></span>
+<span id="cb35-100"><a href="#cb35-100" aria-hidden="true" tabindex="-1"></a>   <span class="fl">0.8</span> <span class="sc">*</span> ((age_s <span class="sc">&gt;</span> <span class="dv">27</span>) <span class="sc">&amp;</span> (major_release_s <span class="sc">==</span> <span class="st">"tech"</span>))</span>
+<span id="cb35-101"><a href="#cb35-101" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-102"><a href="#cb35-102" aria-hidden="true" tabindex="-1"></a>ps_true_s <span class="ot">&lt;-</span> <span class="fu">plogis</span>(linpred_s)</span>
+<span id="cb35-103"><a href="#cb35-103" aria-hidden="true" tabindex="-1"></a>D_s <span class="ot">&lt;-</span> <span class="fu">rbinom</span>(n_stress, <span class="dv">1</span>, ps_true_s)</span>
+<span id="cb35-104"><a href="#cb35-104" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-105"><a href="#cb35-105" aria-hidden="true" tabindex="-1"></a>Y_pre1_s <span class="ot">&lt;-</span></span>
+<span id="cb35-106"><a href="#cb35-106" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.5</span> <span class="sc">*</span> <span class="fu">sin</span>(age_s <span class="sc">/</span> <span class="fl">2.5</span>) <span class="sc">+</span></span>
+<span id="cb35-107"><a href="#cb35-107" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.7</span> <span class="sc">*</span> genre_num_s <span class="sc">-</span></span>
+<span id="cb35-108"><a href="#cb35-108" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.4</span> <span class="sc">*</span> release_num_s <span class="sc">+</span></span>
+<span id="cb35-109"><a href="#cb35-109" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.9</span> <span class="sc">*</span> <span class="fu">sin</span>(age_s <span class="sc">*</span> genre_num_s <span class="sc">/</span> <span class="dv">8</span>) <span class="sc">+</span></span>
+<span id="cb35-110"><a href="#cb35-110" aria-hidden="true" tabindex="-1"></a>  <span class="fu">rnorm</span>(n_stress, <span class="dv">0</span>, <span class="dv">2</span>) <span class="sc">+</span> <span class="dv">28</span></span>
+<span id="cb35-111"><a href="#cb35-111" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-112"><a href="#cb35-112" aria-hidden="true" tabindex="-1"></a>Y_pre2_s <span class="ot">&lt;-</span></span>
+<span id="cb35-113"><a href="#cb35-113" aria-hidden="true" tabindex="-1"></a>  Y_pre1_s <span class="sc">+</span></span>
+<span id="cb35-114"><a href="#cb35-114" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.2</span> <span class="sc">*</span> <span class="fu">cos</span>(age_s <span class="sc">/</span> <span class="fl">2.2</span>) <span class="sc">+</span></span>
+<span id="cb35-115"><a href="#cb35-115" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.5</span> <span class="sc">*</span> (genre_pref_s <span class="sc">==</span> <span class="st">"Action"</span>) <span class="sc">-</span></span>
+<span id="cb35-116"><a href="#cb35-116" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.6</span> <span class="sc">*</span> (major_release_s <span class="sc">==</span> <span class="st">"politics"</span>) <span class="sc">+</span></span>
+<span id="cb35-117"><a href="#cb35-117" aria-hidden="true" tabindex="-1"></a>  <span class="fl">0.8</span> <span class="sc">*</span> <span class="fu">sin</span>(age_s <span class="sc">*</span> release_num_s <span class="sc">/</span> <span class="dv">7</span>)</span>
+<span id="cb35-118"><a href="#cb35-118" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-119"><a href="#cb35-119" aria-hidden="true" tabindex="-1"></a>tau_s <span class="ot">&lt;-</span></span>
+<span id="cb35-120"><a href="#cb35-120" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.5</span> <span class="sc">+</span></span>
+<span id="cb35-121"><a href="#cb35-121" aria-hidden="true" tabindex="-1"></a>  <span class="dv">0</span> <span class="sc">*</span> <span class="fu">sin</span>(age_s <span class="sc">/</span> <span class="fl">1.8</span>) <span class="sc">+</span></span>
+<span id="cb35-122"><a href="#cb35-122" aria-hidden="true" tabindex="-1"></a>  <span class="dv">0</span> <span class="sc">*</span> (genre_pref_s <span class="sc">==</span> <span class="st">"Action"</span>) <span class="sc">-</span></span>
+<span id="cb35-123"><a href="#cb35-123" aria-hidden="true" tabindex="-1"></a>  <span class="dv">0</span> <span class="sc">*</span> (genre_pref_s <span class="sc">==</span> <span class="st">"Drama"</span>)</span>
+<span id="cb35-124"><a href="#cb35-124" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-125"><a href="#cb35-125" aria-hidden="true" tabindex="-1"></a>m0_stress <span class="ot">&lt;-</span></span>
+<span id="cb35-126"><a href="#cb35-126" aria-hidden="true" tabindex="-1"></a>  <span class="fl">2.8</span> <span class="sc">*</span> <span class="fu">sin</span>(age_s <span class="sc">/</span> <span class="fl">1.7</span>) <span class="sc">+</span></span>
+<span id="cb35-127"><a href="#cb35-127" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.1</span> <span class="sc">*</span> (genre_pref_s <span class="sc">==</span> <span class="st">"Action"</span>) <span class="sc">-</span></span>
+<span id="cb35-128"><a href="#cb35-128" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.0</span> <span class="sc">*</span> (genre_pref_s <span class="sc">==</span> <span class="st">"Drama"</span>) <span class="sc">+</span></span>
+<span id="cb35-129"><a href="#cb35-129" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.3</span> <span class="sc">*</span> (major_release_s <span class="sc">==</span> <span class="st">"tech"</span>) <span class="sc">-</span></span>
+<span id="cb35-130"><a href="#cb35-130" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.1</span> <span class="sc">*</span> (major_release_s <span class="sc">==</span> <span class="st">"politics"</span>) <span class="sc">+</span></span>
+<span id="cb35-131"><a href="#cb35-131" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.4</span> <span class="sc">*</span> <span class="fu">sin</span>(age_s <span class="sc">*</span> genre_num_s <span class="sc">/</span> <span class="fl">3.5</span>) <span class="sc">+</span></span>
+<span id="cb35-132"><a href="#cb35-132" aria-hidden="true" tabindex="-1"></a>  <span class="fl">1.0</span> <span class="sc">*</span> ((age_s <span class="sc">&gt;</span> <span class="dv">26</span>) <span class="sc">&amp;</span> (major_release_s <span class="sc">==</span> <span class="st">"tech"</span>)) <span class="sc">+</span><span class="fu">rnorm</span>(n_stress, <span class="dv">0</span>, <span class="fl">1.5</span>)</span>
+<span id="cb35-133"><a href="#cb35-133" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-134"><a href="#cb35-134" aria-hidden="true" tabindex="-1"></a>Y_post_s <span class="ot">&lt;-</span> Y_pre2_s <span class="sc">+</span> tau_s <span class="sc">*</span> D_s <span class="sc">+</span> m0_stress</span>
+<span id="cb35-135"><a href="#cb35-135" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-136"><a href="#cb35-136" aria-hidden="true" tabindex="-1"></a>stress_data <span class="ot">&lt;-</span> <span class="fu">data.frame</span>(</span>
+<span id="cb35-137"><a href="#cb35-137" aria-hidden="true" tabindex="-1"></a>  <span class="at">age =</span> age_s,</span>
+<span id="cb35-138"><a href="#cb35-138" aria-hidden="true" tabindex="-1"></a>  <span class="at">genre_pref =</span> genre_pref_s,</span>
+<span id="cb35-139"><a href="#cb35-139" aria-hidden="true" tabindex="-1"></a>  <span class="at">major_release =</span> major_release_s,</span>
+<span id="cb35-140"><a href="#cb35-140" aria-hidden="true" tabindex="-1"></a>  <span class="at">genre_num =</span> genre_num_s,</span>
+<span id="cb35-141"><a href="#cb35-141" aria-hidden="true" tabindex="-1"></a>  <span class="at">release_num =</span> release_num_s,</span>
+<span id="cb35-142"><a href="#cb35-142" aria-hidden="true" tabindex="-1"></a>  <span class="at">D =</span> D_s,</span>
+<span id="cb35-143"><a href="#cb35-143" aria-hidden="true" tabindex="-1"></a>  <span class="at">ps_true =</span> ps_true_s,</span>
+<span id="cb35-144"><a href="#cb35-144" aria-hidden="true" tabindex="-1"></a>  <span class="at">Y_pre1 =</span> Y_pre1_s,</span>
+<span id="cb35-145"><a href="#cb35-145" aria-hidden="true" tabindex="-1"></a>  <span class="at">Y_pre2 =</span> Y_pre2_s,</span>
+<span id="cb35-146"><a href="#cb35-146" aria-hidden="true" tabindex="-1"></a>  <span class="at">Y_post =</span> Y_post_s,</span>
+<span id="cb35-147"><a href="#cb35-147" aria-hidden="true" tabindex="-1"></a>  <span class="at">diff =</span> Y_post_s <span class="sc">-</span> Y_pre2_s,</span>
+<span id="cb35-148"><a href="#cb35-148" aria-hidden="true" tabindex="-1"></a>  <span class="at">tau =</span> tau_s</span>
+<span id="cb35-149"><a href="#cb35-149" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb35-150"><a href="#cb35-150" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-151"><a href="#cb35-151" aria-hidden="true" tabindex="-1"></a>scenario_b <span class="ot">&lt;-</span> <span class="fu">estimate_did_suite</span>(stress_data) <span class="sc">%&gt;%</span></span>
+<span id="cb35-152"><a href="#cb35-152" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Scenario =</span> <span class="st">"Scenario B: strong selection + interactions"</span>)</span>
+<span id="cb35-153"><a href="#cb35-153" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-154"><a href="#cb35-154" aria-hidden="true" tabindex="-1"></a>scenario_compare <span class="ot">&lt;-</span> <span class="fu">bind_rows</span>(scenario_a, scenario_b) <span class="sc">%&gt;%</span></span>
+<span id="cb35-155"><a href="#cb35-155" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(</span>
+<span id="cb35-156"><a href="#cb35-156" aria-hidden="true" tabindex="-1"></a>    <span class="at">Estimate =</span> <span class="fu">round</span>(Estimate, <span class="dv">4</span>),</span>
+<span id="cb35-157"><a href="#cb35-157" aria-hidden="true" tabindex="-1"></a>    <span class="at">Bias =</span> <span class="fu">round</span>(Bias, <span class="dv">4</span>)</span>
+<span id="cb35-158"><a href="#cb35-158" aria-hidden="true" tabindex="-1"></a>  )</span>
+<span id="cb35-159"><a href="#cb35-159" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb35-160"><a href="#cb35-160" aria-hidden="true" tabindex="-1"></a>knitr<span class="sc">::</span><span class="fu">kable</span>(</span>
+<span id="cb35-161"><a href="#cb35-161" aria-hidden="true" tabindex="-1"></a>  scenario_compare,</span>
+<span id="cb35-162"><a href="#cb35-162" aria-hidden="true" tabindex="-1"></a>  <span class="at">caption =</span> <span class="st">"Two DGPs Compared: Baseline Scenario vs Stress-Test Scenario"</span></span>
+<span id="cb35-163"><a href="#cb35-163" aria-hidden="true" tabindex="-1"></a>)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<table class="caption-top table table-sm table-striped small">
+<caption>Two DGPs Compared: Baseline Scenario vs Stress-Test Scenario</caption>
+<colgroup>
+<col style="width: 30%">
+<col style="width: 10%">
+<col style="width: 9%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Estimator</th>
+<th style="text-align: right;">Estimate</th>
+<th style="text-align: right;">Bias</th>
+<th style="text-align: left;">Scenario</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">True ETT</td>
+<td style="text-align: right;">1.5000</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: left;">Scenario A: moderate nonlinearity</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Unconditional DID</td>
+<td style="text-align: right;">1.7491</td>
+<td style="text-align: right;">0.2491</td>
+<td style="text-align: left;">Scenario A: moderate nonlinearity</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Linear Conditional DID</td>
+<td style="text-align: right;">1.6839</td>
+<td style="text-align: right;">0.1839</td>
+<td style="text-align: left;">Scenario A: moderate nonlinearity</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">GAM Conditional DID</td>
+<td style="text-align: right;">1.3373</td>
+<td style="text-align: right;">-0.1627</td>
+<td style="text-align: left;">Scenario A: moderate nonlinearity</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">IPW-DID (Abadie 2005)</td>
+<td style="text-align: right;">1.3377</td>
+<td style="text-align: right;">-0.1623</td>
+<td style="text-align: left;">Scenario A: moderate nonlinearity</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Doubly Robust DID</td>
+<td style="text-align: right;">1.3369</td>
+<td style="text-align: right;">-0.1631</td>
+<td style="text-align: left;">Scenario A: moderate nonlinearity</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Matching DID (Mahalanobis)</td>
+<td style="text-align: right;">1.8360</td>
+<td style="text-align: right;">0.3360</td>
+<td style="text-align: left;">Scenario A: moderate nonlinearity</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">True ETT</td>
+<td style="text-align: right;">1.5000</td>
+<td style="text-align: right;">0.0000</td>
+<td style="text-align: left;">Scenario B: strong selection + interactions</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Unconditional DID</td>
+<td style="text-align: right;">2.9655</td>
+<td style="text-align: right;">1.4655</td>
+<td style="text-align: left;">Scenario B: strong selection + interactions</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Linear Conditional DID</td>
+<td style="text-align: right;">2.5432</td>
+<td style="text-align: right;">1.0432</td>
+<td style="text-align: left;">Scenario B: strong selection + interactions</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">GAM Conditional DID</td>
+<td style="text-align: right;">1.4790</td>
+<td style="text-align: right;">-0.0210</td>
+<td style="text-align: left;">Scenario B: strong selection + interactions</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">IPW-DID (Abadie 2005)</td>
+<td style="text-align: right;">1.5789</td>
+<td style="text-align: right;">0.0789</td>
+<td style="text-align: left;">Scenario B: strong selection + interactions</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">Doubly Robust DID</td>
+<td style="text-align: right;">1.4762</td>
+<td style="text-align: right;">-0.0238</td>
+<td style="text-align: left;">Scenario B: strong selection + interactions</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Matching DID (Mahalanobis)</td>
+<td style="text-align: right;">1.9330</td>
+<td style="text-align: right;">0.4330</td>
+<td style="text-align: left;">Scenario B: strong selection + interactions</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+<section id="exploratory-plots-stress-test-scenario" class="level2" data-number="3.1">
+<h2 data-number="3.1" class="anchored" data-anchor-id="exploratory-plots-stress-test-scenario"><span class="header-section-number">3.1</span> Exploratory Plots (Stress-Test Scenario)</h2>
+<p>We use the same exploratory comparisons as in the first DGP so the second scenario can be read side by side.</p>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>p1_stress <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(stress_data, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> Y_post, <span class="at">color =</span> <span class="fu">factor</span>(D))) <span class="sc">+</span></span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Control"</span> <span class="ot">=</span> <span class="st">"#4477AA"</span>, <span class="st">"Treated"</span> <span class="ot">=</span> <span class="st">"#EE6677"</span>)) <span class="sc">+</span></span>
+<span id="cb36-5"><a href="#cb36-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb36-6"><a href="#cb36-6" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Post-outcome vs Age"</span>,</span>
+<span id="cb36-7"><a href="#cb36-7" aria-hidden="true" tabindex="-1"></a>    <span class="at">color =</span> <span class="st">"Group"</span></span>
+<span id="cb36-8"><a href="#cb36-8" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb36-9"><a href="#cb36-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb36-10"><a href="#cb36-10" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-11"><a href="#cb36-11" aria-hidden="true" tabindex="-1"></a>p2_stress <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(stress_data, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> diff, <span class="at">color =</span> <span class="fu">factor</span>(D))) <span class="sc">+</span></span>
+<span id="cb36-12"><a href="#cb36-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.15</span>, <span class="at">size =</span> <span class="fl">0.8</span>) <span class="sc">+</span></span>
+<span id="cb36-13"><a href="#cb36-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb36-14"><a href="#cb36-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">scale_color_manual</span>(<span class="at">values =</span> <span class="fu">c</span>(<span class="st">"Control"</span> <span class="ot">=</span> <span class="st">"#4477AA"</span>, <span class="st">"Treated"</span> <span class="ot">=</span> <span class="st">"#EE6677"</span>)) <span class="sc">+</span></span>
+<span id="cb36-15"><a href="#cb36-15" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb36-16"><a href="#cb36-16" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"First Difference (Y_post - Y_pre2) vs Age"</span>,</span>
+<span id="cb36-17"><a href="#cb36-17" aria-hidden="true" tabindex="-1"></a>    <span class="at">color =</span> <span class="st">"Group"</span></span>
+<span id="cb36-18"><a href="#cb36-18" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb36-19"><a href="#cb36-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb36-20"><a href="#cb36-20" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-21"><a href="#cb36-21" aria-hidden="true" tabindex="-1"></a>p3_stress <span class="ot">&lt;-</span> <span class="fu">ggplot</span>(stress_data, <span class="fu">aes</span>(<span class="at">x =</span> age, <span class="at">y =</span> tau)) <span class="sc">+</span></span>
+<span id="cb36-22"><a href="#cb36-22" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_point</span>(<span class="at">alpha =</span> <span class="fl">0.2</span>, <span class="at">size =</span> <span class="fl">0.8</span>, <span class="at">color =</span> <span class="st">"#228833"</span>) <span class="sc">+</span></span>
+<span id="cb36-23"><a href="#cb36-23" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_smooth</span>(<span class="at">se =</span> <span class="cn">FALSE</span>, <span class="at">color =</span> <span class="st">"#228833"</span>, <span class="at">linewidth =</span> <span class="fl">1.2</span>) <span class="sc">+</span></span>
+<span id="cb36-24"><a href="#cb36-24" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(<span class="at">title =</span> <span class="st">"True Individual Treatment Effect τ_i vs Age"</span>) <span class="sc">+</span></span>
+<span id="cb36-25"><a href="#cb36-25" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span>
+<span id="cb36-26"><a href="#cb36-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-27"><a href="#cb36-27" aria-hidden="true" tabindex="-1"></a>p1_stress <span class="sc">+</span> p2_stress <span class="sc">+</span> p3_stress</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: No shared levels found between `names(values)` of the manual scale and the
+data's colour values.
+No shared levels found between `names(values)` of the manual scale and the
+data's colour values.
+No shared levels found between `names(values)` of the manual scale and the
+data's colour values.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: No shared levels found between `names(values)` of the manual scale and the
+data's colour values.
+No shared levels found between `names(values)` of the manual scale and the
+data's colour values.
+No shared levels found between `names(values)` of the manual scale and the
+data's colour values.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>`geom_smooth()` using method = 'gam' and formula = 'y ~ s(x, bs = "cs")'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: Failed to fit group -1.
+Caused by error in `gam.reparam()`:
+! NA/NaN/Inf in foreign function call (arg 3)</code></pre>
+</div>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Geminos_NonlinearDID_Extended_files/figure-html/scenario-b-plots-1.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<details class="code-fold">
+<summary>Code</summary>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb43"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb43-1"><a href="#cb43-1" aria-hidden="true" tabindex="-1"></a>scenario_compare <span class="sc">%&gt;%</span></span>
+<span id="cb43-2"><a href="#cb43-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(Estimator <span class="sc">!=</span> <span class="st">"True ETT"</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb43-3"><a href="#cb43-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">ggplot</span>(<span class="fu">aes</span>(<span class="at">x =</span> Estimator, <span class="at">y =</span> Bias, <span class="at">fill =</span> Scenario)) <span class="sc">+</span></span>
+<span id="cb43-4"><a href="#cb43-4" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_col</span>(<span class="at">position =</span> <span class="fu">position_dodge</span>(<span class="at">width =</span> <span class="fl">0.8</span>), <span class="at">width =</span> <span class="fl">0.7</span>) <span class="sc">+</span></span>
+<span id="cb43-5"><a href="#cb43-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">geom_hline</span>(<span class="at">yintercept =</span> <span class="dv">0</span>, <span class="at">linetype =</span> <span class="st">"dashed"</span>, <span class="at">color =</span> <span class="st">"gray30"</span>) <span class="sc">+</span></span>
+<span id="cb43-6"><a href="#cb43-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">coord_flip</span>() <span class="sc">+</span></span>
+<span id="cb43-7"><a href="#cb43-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">labs</span>(</span>
+<span id="cb43-8"><a href="#cb43-8" aria-hidden="true" tabindex="-1"></a>    <span class="at">title =</span> <span class="st">"Bias Comparison Across Two Nonlinear DID Scenarios"</span>,</span>
+<span id="cb43-9"><a href="#cb43-9" aria-hidden="true" tabindex="-1"></a>    <span class="at">subtitle =</span> <span class="st">"Scenario B is constructed to make unconditional DID much less reliable"</span>,</span>
+<span id="cb43-10"><a href="#cb43-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">x =</span> <span class="cn">NULL</span>,</span>
+<span id="cb43-11"><a href="#cb43-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">y =</span> <span class="st">"Bias"</span></span>
+<span id="cb43-12"><a href="#cb43-12" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">+</span></span>
+<span id="cb43-13"><a href="#cb43-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme_minimal</span>()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</details>
+<div class="cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="Geminos_NonlinearDID_Extended_files/figure-html/scenario-compare-plot-1.png" class="img-fluid figure-img" width="960"></p>
+</figure>
+</div>
+</div>
+</div>
+<p><strong>Interpretation:</strong> In Scenario A, unconditional DID can still look “not too bad” because the marginal violation of parallel trends is moderate. Using the same comparison style as the first DGP, the stress-test plots make it easier to see that Scenario B has much sharper nonlinear separation between treated and control units, so naive DID deteriorates much more visibly.</p>
+<hr>
+</section>
+</section>
+<section id="theory-extending-theorem-2.3-to-nonlinear-models" class="level1" data-number="4">
+<h1 data-number="4"><span class="header-section-number">4</span> Theory: Extending Theorem 2.3 to Nonlinear Models</h1>
+<section id="setup-and-notation" class="level2" data-number="4.1">
+<h2 data-number="4.1" class="anchored" data-anchor-id="setup-and-notation"><span class="header-section-number">4.1</span> Setup and Notation</h2>
+<p>Let <span class="math inline">\(i \in \{1, \ldots, n\}\)</span> index units, <span class="math inline">\(t \in \{0, 1\}\)</span> index time (pre/post). Define:</p>
+<ul>
+<li><span class="math inline">\(Y_{it}(d)\)</span>: potential outcome for unit <span class="math inline">\(i\)</span> at time <span class="math inline">\(t\)</span> under treatment <span class="math inline">\(d \in \{0,1\}\)</span></li>
+<li><span class="math inline">\(A_i \in \{0,1\}\)</span>: binary treatment indicator (received at <span class="math inline">\(t=1\)</span>)</li>
+<li><span class="math inline">\(X_i \in \mathcal{X} \subseteq \mathbb{R}^k\)</span>: pre-treatment covariates</li>
+<li><span class="math inline">\(\Delta Y_i = Y_{i1} - Y_{i0}\)</span>: observed first difference</li>
+<li><span class="math inline">\(\Delta Y_i(0) = Y_{i1}(0) - Y_{i0}(0)\)</span>: counterfactual first difference under no treatment</li>
+</ul>
+<p>The parameter of interest is the <strong>Effect of Treatment on the Treated (ETT)</strong>: <span class="math display">\[\text{ETT} = \mathbb{E}[Y_{i1}(1) - Y_{i1}(0) \mid A_i = 1]\]</span></p>
+<p>To match the notation used in many theorem statements, this section uses <span class="math inline">\(A_i\)</span> for treatment assignment. The simulation code above keeps the variable name <code>D</code>; they refer to the same binary treatment indicator.</p>
+<hr>
+</section>
+<section id="theorem-2.3-linear-case-recall" class="level2" data-number="4.2">
+<h2 data-number="4.2" class="anchored" data-anchor-id="theorem-2.3-linear-case-recall"><span class="header-section-number">4.2</span> Theorem 2.3 (Linear Case — Recall)</h2>
+<p>In the standard linear DID setup, identification rests on:</p>
+<blockquote class="blockquote">
+<p><strong>Assumption L (Linear Parallel Trends):</strong> <span class="math inline">\(\mathbb{E}[\Delta Y_i(0) \mid X_i, A_i] = \mathbb{E}[\Delta Y_i(0) \mid X_i] = X_i^\top \beta\)</span></p>
+</blockquote>
+<p>Under this assumption and no-anticipation, the ETT is identified by: <span class="math display">\[\text{ETT} = \mathbb{E}[\Delta Y_i \mid A_i = 1] - \mathbb{E}[X_i^\top \hat{\beta}_0 \mid A_i = 1]\]</span> where <span class="math inline">\(\hat{\beta}_0\)</span> is estimated on controls only.</p>
+<p><strong>The linearity constraint <span class="math inline">\(X_i^\top \beta\)</span> is restrictive.</strong> When the true conditional trend is a nonlinear function of <span class="math inline">\(X_i\)</span>, this estimator is inconsistent.</p>
+<hr>
+</section>
+<section id="extended-theorem-nonlinear-identification" class="level2" data-number="4.3">
+<h2 data-number="4.3" class="anchored" data-anchor-id="extended-theorem-nonlinear-identification"><span class="header-section-number">4.3</span> Extended Theorem: Nonlinear Identification</h2>
+<section id="assumptions" class="level3" data-number="4.3.1">
+<h3 data-number="4.3.1" class="anchored" data-anchor-id="assumptions"><span class="header-section-number">4.3.1</span> Assumptions</h3>
+<p><strong>Assumption 1 (No Anticipation):</strong> <span class="math display">\[Y_{i0}(1) = Y_{i0}(0) \quad \text{a.s.}\]</span></p>
+<p><strong>Assumption 2 (Nonlinear Conditional Parallel Trends — NCPT):</strong></p>
+<p>There exists a measurable function <span class="math inline">\(\mu_0: \mathcal{X} \to \mathbb{R}\)</span> such that: <span class="math display">\[\mathbb{E}[\Delta Y_i(0) \mid X_i = x, A_i = a] = \mu_0(x) \quad \text{for a.e. } x \in \mathcal{X}, \; a \in \{0,1\}\]</span></p>
+<p>That is, conditional on <span class="math inline">\(X_i\)</span>, the <strong>counterfactual trend</strong> is the same for treated and control units — but <span class="math inline">\(\mu_0\)</span> need <strong>not</strong> be linear.</p>
+<p><strong>Assumption 3 (Overlap / Common Support):</strong> <span class="math display">\[0 &lt; p(x) := \mathbb{P}(A_i = 1 \mid X_i = x) &lt; 1 \quad \text{for a.e. } x \in \mathcal{X}\]</span></p>
+<p><strong>Assumption 4 (Regularity):</strong> <span class="math inline">\(\mathbb{E}[|\Delta Y_i|^2] &lt; \infty\)</span> and <span class="math inline">\(\mathbb{E}[|\mu_0(X_i)|^2] &lt; \infty\)</span>.</p>
+<hr>
+</section>
+<section id="theorem-nonlinear-did-identifiability" class="level3" data-number="4.3.2">
+<h3 data-number="4.3.2" class="anchored" data-anchor-id="theorem-nonlinear-did-identifiability"><span class="header-section-number">4.3.2</span> Theorem (Nonlinear DID Identifiability)</h3>
+<blockquote class="blockquote">
+<p><strong>Theorem.</strong> Under Assumptions 1–4, the ETT is identified. Specifically:</p>
+<p><span class="math display">\[\text{ETT} = \mathbb{E}[\Delta Y_i \mid A_i = 1] - \mathbb{E}[\mu_0(X_i) \mid A_i = 1]\]</span></p>
+<p>where <span class="math inline">\(\mu_0(x) = \mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 0]\)</span> is identified from the control group.</p>
+</blockquote>
+<section id="proof" class="level4" data-number="4.3.2.1">
+<h4 data-number="4.3.2.1" class="anchored" data-anchor-id="proof"><span class="header-section-number">4.3.2.1</span> Proof</h4>
+<p><strong>Step 1: Decompose the observed first difference for treated units.</strong></p>
+<p>For a treated unit (<span class="math inline">\(A_i = 1\)</span>), the observed outcome at <span class="math inline">\(t=1\)</span> is <span class="math inline">\(Y_{i1} = Y_{i1}(1)\)</span>. Therefore: <span class="math display">\[\Delta Y_i = Y_{i1}(1) - Y_{i0}(1) \stackrel{A1}{=} Y_{i1}(1) - Y_{i0}(0)\]</span></p>
+<p>Add and subtract <span class="math inline">\(Y_{i1}(0)\)</span>: <span class="math display">\[\Delta Y_i = \underbrace{[Y_{i1}(1) - Y_{i1}(0)]}_{\tau_i} + \underbrace{[Y_{i1}(0) - Y_{i0}(0)]}_{\Delta Y_i(0)}\]</span></p>
+<p><strong>Step 2: Take conditional expectation given <span class="math inline">\(X_i\)</span> within the treated group.</strong></p>
+<p><span class="math display">\[\mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 1] = \mathbb{E}[\tau_i \mid X_i = x, A_i = 1] + \mathbb{E}[\Delta Y_i(0) \mid X_i = x, A_i = 1]\]</span></p>
+<p>By Assumption 2 (NCPT): <span class="math display">\[\mathbb{E}[\Delta Y_i(0) \mid X_i = x, A_i = 1] = \mu_0(x)\]</span></p>
+<p>Therefore: <span class="math display">\[\mathbb{E}[\tau_i \mid X_i = x, A_i = 1] = \mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 1] - \mu_0(x)\]</span></p>
+<p><strong>Step 3: Integrate over the covariate distribution of the treated group.</strong></p>
+<p><span class="math display">\[\text{ETT} = \mathbb{E}[\tau_i \mid A_i = 1] = \int_{\mathcal{X}} \mathbb{E}[\tau_i \mid X_i = x, A_i = 1] \, d F_{X|A=1}(x)\]</span></p>
+<p><span class="math display">\[= \int_{\mathcal{X}} \left[\mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 1] - \mu_0(x)\right] dF_{X|A=1}(x)\]</span></p>
+<p><span class="math display">\[= \mathbb{E}[\Delta Y_i \mid A_i = 1] - \mathbb{E}[\mu_0(X_i) \mid A_i = 1] \tag{$\star$}\]</span></p>
+<p><strong>Step 4: Identifiability of <span class="math inline">\(\mu_0\)</span>.</strong></p>
+<p>By Assumption 3 (overlap), <span class="math inline">\(\mathbb{P}(A_i = 0 \mid X_i = x) &gt; 0\)</span> a.e. Therefore: <span class="math display">\[\mu_0(x) = \mathbb{E}[\Delta Y_i \mid X_i = x, A_i = 0]\]</span> is identified from the joint distribution of <span class="math inline">\((\Delta Y_i, X_i)\)</span> among controls — observed in the data.</p>
+<p><strong>Step 5: All terms in <span class="math inline">\((\star)\)</span> are identified.</strong></p>
+<ul>
+<li><span class="math inline">\(\mathbb{E}[\Delta Y_i \mid A_i = 1]\)</span>: observed sample mean of first differences among treated units.</li>
+<li><span class="math inline">\(\mathbb{E}[\mu_0(X_i) \mid A_i = 1]\)</span>: plug in the identified <span class="math inline">\(\mu_0\)</span> evaluated at treated covariate values, then average. This is consistent for any nonparametric estimator of <span class="math inline">\(\mu_0\)</span> satisfying standard regularity conditions.</li>
+</ul>
+<p><strong>Therefore, <span class="math inline">\(\text{ETT}\)</span> is nonparametrically identified.</strong> <span class="math inline">\(\blacksquare\)</span></p>
+<hr>
+</section>
+</section>
+<section id="corollary-ipw-representation" class="level3" data-number="4.3.3">
+<h3 data-number="4.3.3" class="anchored" data-anchor-id="corollary-ipw-representation"><span class="header-section-number">4.3.3</span> Corollary: IPW Representation</h3>
+<p>Under Assumptions 1–4, the ETT also admits the <strong>inverse-probability-weighted</strong> representation:</p>
+<p><span class="math display">\[\text{ETT} = \frac{1}{\mathbb{E}[A_i]} \mathbb{E}\left[\frac{(A_i - p(X_i))}{1-p(X_i)} \Delta Y_i\right]\]</span></p>
+<p><strong>Proof sketch:</strong> By Bayes’ rule, <span class="math display">\[dF_{X|A=0}(x) = \frac{1-p(x)}{1-\mathbb{E}[A]} dF_X(x)\]</span></p>
+<p>Substituting into <span class="math inline">\((\star)\)</span>: <span class="math display">\[\mathbb{E}[\mu_0(X_i) \mid A_i=1] = \frac{1}{\mathbb{E}[A]} \mathbb{E}\left[\frac{p(X_i)(1-p(X_i))}{1-p(X_i)} \cdot \frac{\Delta Y_i}{1} \cdot \frac{1-p(X_i)}{p(X_i)} \right] \ldots\]</span></p>
+<p>Expanding the full derivation via iterated expectations recovers the Abadie (2005) IPW formula. <span class="math inline">\(\square\)</span></p>
+<hr>
+</section>
+<section id="corollary-doubly-robust-representation" class="level3" data-number="4.3.4">
+<h3 data-number="4.3.4" class="anchored" data-anchor-id="corollary-doubly-robust-representation"><span class="header-section-number">4.3.4</span> Corollary: Doubly Robust Representation</h3>
+<p>Define the doubly robust score: <span class="math display">\[\psi_i = A_i \Delta Y_i - (A_i - p(X_i)) \mu_0(X_i) - \frac{p(X_i)(A_i - p(X_i))}{1-p(X_i)} \Delta Y_i\]</span></p>
+<p>Then <span class="math inline">\(\mathbb{E}[\psi_i] / \mathbb{E}[A_i] = \text{ETT}\)</span> whenever <strong>either</strong> <span class="math inline">\(\mu_0\)</span> or <span class="math inline">\(p\)</span> is correctly specified.</p>
+<p><strong>Key implication for nonlinear settings:</strong> Both <span class="math inline">\(\mu_0\)</span> and <span class="math inline">\(p\)</span> can be estimated nonparametrically (e.g., via GAMs, forests, neural networks). The doubly robust estimator achieves <span class="math inline">\(\sqrt{n}\)</span>-consistency even when each nuisance component is estimated at slower rates, provided the product of their errors vanishes fast enough (Chernozhukov et al.&nbsp;2018, double machine learning).</p>
+<hr>
+</section>
+</section>
+<section id="comparison-linear-vs-nonlinear-parallel-trends" class="level2" data-number="4.4">
+<h2 data-number="4.4" class="anchored" data-anchor-id="comparison-linear-vs-nonlinear-parallel-trends"><span class="header-section-number">4.4</span> Comparison: Linear vs Nonlinear Parallel Trends</h2>
+<table class="caption-top table">
+<colgroup>
+<col style="width: 15%">
+<col style="width: 35%">
+<col style="width: 50%">
+</colgroup>
+<thead>
+<tr class="header">
+<th>Feature</th>
+<th>Theorem 2.3 (Linear)</th>
+<th>Extended Theorem (Nonlinear)</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Trend assumption</td>
+<td><span class="math inline">\(\mu_0(x) = x^\top\beta\)</span></td>
+<td><span class="math inline">\(\mu_0(x)\)</span> unrestricted</td>
+</tr>
+<tr class="even">
+<td>Estimation of <span class="math inline">\(\mu_0\)</span></td>
+<td>OLS on controls</td>
+<td>Any nonparametric method</td>
+</tr>
+<tr class="odd">
+<td>Identification condition</td>
+<td>Linearity + overlap</td>
+<td>NCPT + overlap (weaker)</td>
+</tr>
+<tr class="even">
+<td>Risk of misspecification</td>
+<td>High (nonlinear DGP)</td>
+<td>Low</td>
+</tr>
+<tr class="odd">
+<td>Rate of convergence of ETT</td>
+<td><span class="math inline">\(\sqrt{n}\)</span> (parametric)</td>
+<td><span class="math inline">\(\sqrt{n}\)</span> (if DR or cross-fitting used)</td>
+</tr>
+<tr class="even">
+<td>Testable?</td>
+<td>Pre-trend F-test</td>
+<td>Nonparametric pre-trend test</td>
+</tr>
+</tbody>
+</table>
+<hr>
+</section>
+<section id="discussion-what-ncpt-rules-out" class="level2" data-number="4.5">
+<h2 data-number="4.5" class="anchored" data-anchor-id="discussion-what-ncpt-rules-out"><span class="header-section-number">4.5</span> Discussion: What NCPT Rules Out</h2>
+<p>The NCPT assumption is <strong>weaker</strong> than linear parallel trends but still imposes a meaningful restriction:</p>
+<p><span class="math display">\[\mathbb{E}[\Delta Y_i(0) \mid X_i, A_i] = \mu_0(X_i)\]</span></p>
+<p>This rules out:</p>
+<ol type="1">
+<li><p><strong>Selection on trends:</strong> Cases where treated units have systematically different counterfactual trends even after conditioning on <span class="math inline">\(X_i\)</span>. In this case, the ETT is generally not identified without stronger assumptions (e.g., IV, bounding approaches).</p></li>
+<li><p><strong>Time-varying treatment effect on control trend:</strong> If <span class="math inline">\(\mu_0\)</span> itself shifts due to spillovers or general equilibrium effects, <span class="math inline">\(\mu_0\)</span> is contaminated.</p></li>
+</ol>
+<p><strong>Testability via Pre-Trends:</strong></p>
+<p>With two pre-periods (<span class="math inline">\(t=-1, t=0\)</span>), NCPT implies: <span class="math display">\[\mathbb{E}[Y_{i0}(0) - Y_{i,-1}(0) \mid X_i, A_i=1] = \mu_0^{\text{pre}}(X_i)\]</span></p>
+<p>which can be tested nonparametrically using the pre-period data (e.g., via a permutation test on <span class="math inline">\(\hat{\mu}_0^{\text{pre}}\)</span> residuals). This is the nonlinear analogue of the parallel pre-trends F-test.</p>
+<hr>
+</section>
+</section>
+<section id="references" class="level1" data-number="5">
+<h1 data-number="5"><span class="header-section-number">5</span> References</h1>
+<ul>
+<li>Abadie, A. (2005). Semiparametric difference-in-differences estimators. <em>Review of Economic Studies</em>, 72(1), 1–19.</li>
+<li>Callaway, B., &amp; Sant’Anna, P. H. C. (2021). Difference-in-differences with multiple time periods. <em>Journal of Econometrics</em>, 225(2), 200–230.</li>
+<li>Chernozhukov, V., Chetverikov, D., Demirer, M., et al.&nbsp;(2018). Double/debiased machine learning for treatment and structural parameters. <em>The Econometrics Journal</em>, 21(1), C1–C68.</li>
+<li>Sant’Anna, P. H. C., &amp; Zhao, J. (2020). Doubly robust difference-in-differences estimators. <em>Journal of Econometrics</em>, 219(1), 101–122.</li>
+<li>Roth, J., Sant’Anna, P. H. C., Bilinski, A., &amp; Poe, J. (2023). What’s trending in difference-in-differences? <em>Journal of Econometrics</em>, 235(2), 2218–2244.</li>
+</ul>
+
+</section>
+
+</main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+</body></html>
