@@ -30,7 +30,6 @@ major_release <- sample(
   n, replace=TRUE
 )
 
-# 数值编码（方便非线性）
 genre_num <- as.numeric(factor(genre_preference))
 release_num <- as.numeric(factor(major_release))
 
@@ -69,8 +68,8 @@ min_2 <-
 tau <- 
   1.5 + 
   0.5*sin(age/2) +
-  0.3*(genre_num == 1) +     # Action更有效
-  -0.4*(genre_num == 2)      # Drama效果差
+  0.3*(genre_num == 1) + 
+  -0.4*(genre_num == 2)
 
 # ----------------------------
 # 5. Post outcome
